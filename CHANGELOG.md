@@ -2,6 +2,17 @@
 
 All notable changes to BlastRadius are documented in this file.
 
+## [0.0.5]
+
+### Added
+
+- Class classifiers for common Flutter layers: service, repository, bloc, cubit,
+  changeNotifier, provider, widget, and screen.
+- Hierarchy-aware labeling using `extends` / `with` / `implements` type names,
+  with Screen/Page naming preferred over generic widgets.
+- `analyze` prints a non-zero kind breakdown after AST extraction (`-v` lists
+  each classified class).
+
 ## [0.0.4]
 
 ### Added

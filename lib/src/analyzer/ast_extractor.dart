@@ -83,6 +83,14 @@ class _ExtractionVisitor extends RecursiveAstVisitor<void> {
         name: className,
         filePath: filePath,
         superclassName: node.extendsClause?.superclass.toSource(),
+        mixinNames: node.withClause?.mixinTypes
+                .map((type) => type.toSource())
+                .toList(growable: false) ??
+            const [],
+        interfaceNames: node.implementsClause?.interfaces
+                .map((type) => type.toSource())
+                .toList(growable: false) ??
+            const [],
         methods: methodNames,
       ),
     );

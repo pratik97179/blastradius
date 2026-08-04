@@ -4,12 +4,22 @@ class DeclaredClass {
     required this.filePath,
     required this.methods,
     this.superclassName,
+    this.mixinNames = const [],
+    this.interfaceNames = const [],
   });
 
   final String name;
   final String filePath;
   final String? superclassName;
+  final List<String> mixinNames;
+  final List<String> interfaceNames;
   final List<String> methods;
+
+  List<String> get hierarchyTypeNames => [
+        if (superclassName != null) superclassName!,
+        ...mixinNames,
+        ...interfaceNames,
+      ];
 }
 
 class DeclaredMethod {

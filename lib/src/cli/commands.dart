@@ -5,12 +5,14 @@ import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
 
 import '../analyzer/ast_extractor.dart';
+import '../analyzer/classifiers.dart';
 import '../analyzer/project_analyzer.dart';
+import '../model/node_kind.dart';
 import '../model/project_context.dart';
 import '../utils/logger.dart';
 import 'exit_codes.dart';
 
-const String packageVersion = '0.0.4';
+const String packageVersion = '0.0.5';
 
 Future<int> runBlastRadius(List<String> args) async {
   final runner = BlastRadiusCommandRunner();
@@ -309,7 +311,7 @@ class AnalyzeCommand extends Command<int> with GlobalOptions {
 
   @override
   String get description =>
-      'Discover a Flutter project, index Dart sources, and extract AST symbols.';
+      'Discover a Flutter project, extract AST symbols, and classify types.';
 
   @override
   Future<int> run() async {
@@ -331,12 +333,28 @@ class AnalyzeCommand extends Command<int> with GlobalOptions {
 
     try {
       final ast = await AstExtractor().extract(context);
+      final classifier = ClassClassifier();
+      final classified = classifier.classifyAll(ast.classes);
+      final kindCounts = classifier.countByKind(classified);
+
       logger.info('Classes   ${ast.classes.length}');
       logger.info('Methods   ${ast.methods.length}');
       logger.info(
         'Calls     ${ast.calls.length} (${ast.resolvedCallCount} resolved)',
       );
+      logger.info('Kinds');
+      for (final kind in NodeKind.values) {
+        final count = kindCounts[kind];
+        if (count == null || count == 0) {
+          continue;
+        }
+        logger.info('  ${kind.label.padRight(14)} $count');
+      }
+
       if (logger.verbose) {
+        for (final item in classified) {
+          logger.debug('${item.kind.label}: ${item.name}');
+        }
         for (final call in ast.calls.where((c) => c.isResolved)) {
           final from = [
             if (call.fromClass != null) call.fromClass,
