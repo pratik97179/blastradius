@@ -2,6 +2,19 @@
 
 All notable changes to BlastRadius are documented in this file.
 
+## [0.0.4]
+
+### Added
+
+- AST extraction through `AstExtractor` using `package:analyzer`
+  `AnalysisContextCollection` for classes, methods, and call sites.
+- Resolved call capture for method invocations and constructor creates when the
+  target project has a valid package config.
+- `analyze` reports class, method, and call counts after discovery (`-v` lists
+  resolved call edges).
+- Plain Dart `dart_call_chain` fixture for reliable resolved-call tests without
+  a Flutter SDK.
+
 ## [0.0.3]
 
 ### Added

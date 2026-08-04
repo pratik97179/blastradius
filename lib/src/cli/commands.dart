@@ -4,12 +4,13 @@ import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
 
+import '../analyzer/ast_extractor.dart';
 import '../analyzer/project_analyzer.dart';
 import '../model/project_context.dart';
 import '../utils/logger.dart';
 import 'exit_codes.dart';
 
-const String packageVersion = '0.0.3';
+const String packageVersion = '0.0.4';
 
 Future<int> runBlastRadius(List<String> args) async {
   final runner = BlastRadiusCommandRunner();
@@ -308,7 +309,7 @@ class AnalyzeCommand extends Command<int> with GlobalOptions {
 
   @override
   String get description =>
-      'Discover a Flutter project and index Dart sources (graph warm-up comes later).';
+      'Discover a Flutter project, index Dart sources, and extract AST symbols.';
 
   @override
   Future<int> run() async {
@@ -327,6 +328,28 @@ class AnalyzeCommand extends Command<int> with GlobalOptions {
         logger.debug(p.relative(file, from: context.rootPath));
       }
     }
+
+    try {
+      final ast = await AstExtractor().extract(context);
+      logger.info('Classes   ${ast.classes.length}');
+      logger.info('Methods   ${ast.methods.length}');
+      logger.info(
+        'Calls     ${ast.calls.length} (${ast.resolvedCallCount} resolved)',
+      );
+      if (logger.verbose) {
+        for (final call in ast.calls.where((c) => c.isResolved)) {
+          final from = [
+            if (call.fromClass != null) call.fromClass,
+            if (call.fromMethod != null) call.fromMethod,
+          ].join('.');
+          logger.debug('$from -> ${call.targetQualifiedName}');
+        }
+      }
+    } on AstExtractionException catch (e) {
+      logger.error(e.message);
+      return ExitCodes.projectError;
+    }
+
     return ExitCodes.success;
   }
 }
