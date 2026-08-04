@@ -1,0 +1,18 @@
+name: blastradius
+description: Know your blast radius before you commit. Static impact analysis for Flutter apps.
+version: 0.0.1
+repository: https://github.com/blastradius/blastradius
+
+environment:
+  sdk: ^3.5.0
+
+executables:
+  blastradius: blastradius
+
+dependencies:
+  args: ^2.5.0
+  path: ^1.9.0
+
+dev_dependencies:
+  lints: ^5.0.0
+  test: ^1.25.0
