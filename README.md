@@ -48,9 +48,10 @@ Large Flutter codebases hide impact behind services, repositories, Blocs, and ro
 | AST extraction | Ready |
 | Class classifiers | Ready |
 | Dependency graph | Ready |
-| Blast radius engine / `trace` | Next |
-| `diff` analysis | Planned |
-| Console / JSON / Markdown reports | Planned |
+| Blast radius engine / `trace` | Ready |
+| `diff` analysis | Next |
+| Console report | Ready |
+| JSON / Markdown reports | Partial |
 
 ## Install
 
@@ -77,10 +78,12 @@ blastradius --version
 blastradius -p path/to/flutter_app analyze
 blastradius -p path/to/flutter_app analyze -v
 
-# Trace / diff (args + discovery work; analysis not implemented yet)
+# Trace blast radius (live)
 blastradius -p path/to/flutter_app trace method getPortfolio
 blastradius -p path/to/flutter_app trace file lib/services/portfolio_service.dart
 blastradius -p path/to/flutter_app trace class PortfolioRepository
+
+# Diff (not implemented yet)
 blastradius -p path/to/flutter_app diff --base HEAD
 ```
 
@@ -89,9 +92,9 @@ Global flags: `--project` (`-p`), `--verbose` (`-v`), `--version` (`-V`).
 | Exit code | Meaning |
 |-----------|---------|
 | `0` | Success |
-| `1` | Usage error |
+| `1` | Usage / symbol resolution error |
 | `2` | Project discovery failed |
-| `3` | Command parsed, analysis not implemented yet |
+| `3` | Command acknowledged, not implemented yet (`diff`) |
 
 See [CHANGELOG.md](CHANGELOG.md).
 

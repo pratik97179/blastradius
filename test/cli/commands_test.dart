@@ -40,7 +40,7 @@ void main() {
       expect(code, ExitCodes.projectError);
     });
 
-    test('trace method validates project then reports not implemented', () async {
+    test('trace method returns a blast radius report', () async {
       final code = await runBlastRadius([
         '-p',
         fixture,
@@ -48,7 +48,18 @@ void main() {
         'method',
         'getPortfolio',
       ]);
-      expect(code, ExitCodes.notImplemented);
+      expect(code, ExitCodes.success);
+    });
+
+    test('trace unknown method fails with usage error', () async {
+      final code = await runBlastRadius([
+        '-p',
+        fixture,
+        'trace',
+        'method',
+        'definitelyMissingMethodZz',
+      ]);
+      expect(code, ExitCodes.usageError);
     });
 
     test('diff validates project then reports not implemented', () async {

@@ -2,6 +2,19 @@
 
 All notable changes to BlastRadius are documented in this file.
 
+## [0.0.7]
+
+### Added
+
+- Blast radius engine with reverse-graph traversal, confidence scoring, and
+  risk heuristics.
+- Live `trace method`, `trace class`, and `trace file` commands with console
+  reports (lightweight `json` / `md` output stubs included).
+- Symbol resolver with ambiguity errors when a method/class name matches more
+  than once without `--file`.
+- Best-effort suggested tests from `*_test.dart` names that match affected
+  symbols.
+
 ## [0.0.6]
 
 ### Added

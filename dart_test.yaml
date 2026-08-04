@@ -2,4 +2,5 @@ paths:
   - test/cli
   - test/analyzer
   - test/graph
+  - test/engine
   - test/fixtures/fixture_layout_test.dart

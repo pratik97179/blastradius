@@ -4,17 +4,22 @@ import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
 
+import '../analyzer/analysis_pipeline.dart';
 import '../analyzer/ast_extractor.dart';
 import '../analyzer/classifiers.dart';
 import '../analyzer/project_analyzer.dart';
+import '../engine/blast_radius_engine.dart';
+import '../engine/symbol_resolver.dart';
 import '../graph/edge.dart';
-import '../graph/graph_builder.dart';
+import '../graph/node.dart';
+import '../model/blast_result.dart';
 import '../model/node_kind.dart';
 import '../model/project_context.dart';
+import '../report/console_report.dart';
 import '../utils/logger.dart';
 import 'exit_codes.dart';
 
-const String packageVersion = '0.0.6';
+const String packageVersion = '0.0.7';
 
 Future<int> runBlastRadius(List<String> args) async {
   final runner = BlastRadiusCommandRunner();
@@ -102,11 +107,47 @@ mixin GlobalOptions on Command<int> {
   ProjectContext? discoverProject() {
     try {
       final context = ProjectAnalyzer().discover(projectPath);
-      logger.debug('discovered ${context.packageName} (${context.dartFileCount} dart files)');
+      logger.debug(
+        'discovered ${context.packageName} (${context.dartFileCount} dart files)',
+      );
       return context;
     } on ProjectDiscoveryException catch (e) {
       logger.error(e.message);
       return null;
+    }
+  }
+
+  Future<int> runTrace({
+    required ProjectContext context,
+    required List<GraphNode> Function(AnalysisSnapshot snapshot) resolveSeeds,
+    required String format,
+  }) async {
+    try {
+      final snapshot = await AnalysisPipeline().run(context);
+      final seeds = resolveSeeds(snapshot);
+      final result = BlastRadiusEngine().trace(
+        graph: snapshot.graph,
+        seeds: seeds,
+        candidateTestFiles: context.dartFiles
+            .where((f) => f.endsWith('_test.dart'))
+            .toList(growable: false),
+      );
+
+      if (format == 'json') {
+        logger.info(_toJsonLite(result.changed, result.screens, result.risk.label, result.confidence));
+      } else if (format == 'md') {
+        logger.info('# BlastRadius\n');
+        logger.info(ConsoleReport().render(result));
+      } else {
+        logger.info(ConsoleReport().render(result));
+      }
+      return ExitCodes.success;
+    } on AstExtractionException catch (e) {
+      logger.error(e.message);
+      return ExitCodes.projectError;
+    } on SymbolResolutionException catch (e) {
+      logger.error(e.message);
+      return ExitCodes.usageError;
     }
   }
 }
@@ -170,12 +211,16 @@ class TraceMethodCommand extends Command<int> with GlobalOptions {
     final methodName = argResults!.rest.first;
     final file = argResults!['file'] as String?;
     final format = argResults!['format'] as String;
-    return _notImplemented(
-      logger: logger,
+
+    return runTrace(
       context: context,
-      summary:
-          'trace method $methodName'
-          '${file != null ? ' --file $file' : ''} --format $format',
+      format: format,
+      resolveSeeds: (snapshot) => SymbolResolver().resolveMethod(
+        snapshot.graph,
+        methodName: methodName,
+        filePath: file,
+        projectRoot: context.rootPath,
+      ),
     );
   }
 }
@@ -211,10 +256,15 @@ class TraceFileCommand extends Command<int> with GlobalOptions {
 
     final filePath = argResults!.rest.first;
     final format = argResults!['format'] as String;
-    return _notImplemented(
-      logger: logger,
+
+    return runTrace(
       context: context,
-      summary: 'trace file $filePath --format $format',
+      format: format,
+      resolveSeeds: (snapshot) => SymbolResolver().resolveFile(
+        snapshot.graph,
+        filePath: filePath,
+        projectRoot: context.rootPath,
+      ),
     );
   }
 }
@@ -257,12 +307,16 @@ class TraceClassCommand extends Command<int> with GlobalOptions {
     final className = argResults!.rest.first;
     final file = argResults!['file'] as String?;
     final format = argResults!['format'] as String;
-    return _notImplemented(
-      logger: logger,
+
+    return runTrace(
       context: context,
-      summary:
-          'trace class $className'
-          '${file != null ? ' --file $file' : ''} --format $format',
+      format: format,
+      resolveSeeds: (snapshot) => SymbolResolver().resolveClass(
+        snapshot.graph,
+        className: className,
+        filePath: file,
+        projectRoot: context.rootPath,
+      ),
     );
   }
 }
@@ -299,11 +353,11 @@ class DiffCommand extends Command<int> with GlobalOptions {
 
     final base = argResults!['base'] as String;
     final format = argResults!['format'] as String;
-    return _notImplemented(
-      logger: logger,
-      context: context,
-      summary: 'diff --base $base --format $format',
-    );
+    logger.info('BlastRadius $packageVersion');
+    logger.info('Project ${context.packageName} (${context.dartFileCount} dart files)');
+    logger.info('Command acknowledged: diff --base $base --format $format');
+    logger.info('Analysis not implemented yet.');
+    return ExitCodes.notImplemented;
   }
 }
 
@@ -334,11 +388,10 @@ class AnalyzeCommand extends Command<int> with GlobalOptions {
     }
 
     try {
-      final ast = await AstExtractor().extract(context);
-      final classifier = ClassClassifier();
-      final classified = classifier.classifyAll(ast.classes);
-      final kindCounts = classifier.countByKind(classified);
-      final graph = GraphBuilder().build(ast: ast, classified: classified);
+      final snapshot = await AnalysisPipeline().run(context);
+      final kindCounts = ClassClassifier().countByKind(snapshot.classified);
+      final graph = snapshot.graph;
+      final ast = snapshot.ast;
 
       logger.info('Classes   ${ast.classes.length}');
       logger.info('Methods   ${ast.methods.length}');
@@ -356,7 +409,7 @@ class AnalyzeCommand extends Command<int> with GlobalOptions {
       }
 
       if (logger.verbose) {
-        for (final item in classified) {
+        for (final item in snapshot.classified) {
           logger.debug('${item.kind.label}: ${item.name}');
         }
         for (final edge in graph.edges.where((e) => e.kind == EdgeKind.calls)) {
@@ -374,14 +427,13 @@ class AnalyzeCommand extends Command<int> with GlobalOptions {
   }
 }
 
-Future<int> _notImplemented({
-  required Logger logger,
-  required ProjectContext context,
-  required String summary,
-}) async {
-  logger.info('BlastRadius $packageVersion');
-  logger.info('Project ${context.packageName} (${context.dartFileCount} dart files)');
-  logger.info('Command acknowledged: $summary');
-  logger.info('Analysis not implemented yet.');
-  return ExitCodes.notImplemented;
+String _toJsonLite(
+  List<String> changed,
+  List<String> screens,
+  String risk,
+  double confidence,
+) {
+  final changedJson = changed.map((e) => '"$e"').join(', ');
+  final screensJson = screens.map((e) => '"$e"').join(', ');
+  return '{"changed":[$changedJson],"screens":[$screensJson],"risk":"$risk","confidence":$confidence}';
 }
