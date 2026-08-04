@@ -47,8 +47,9 @@ Large Flutter codebases hide impact behind services, repositories, Blocs, and ro
 | Portfolio fixture chain | Ready |
 | AST extraction | Ready |
 | Class classifiers | Ready |
-| Dependency graph | Next |
-| `trace` / `diff` analysis | Planned |
+| Dependency graph | Ready |
+| Blast radius engine / `trace` | Next |
+| `diff` analysis | Planned |
 | Console / JSON / Markdown reports | Planned |
 
 ## Install

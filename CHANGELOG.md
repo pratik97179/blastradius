@@ -2,6 +2,16 @@
 
 All notable changes to BlastRadius are documented in this file.
 
+## [0.0.6]
+
+### Added
+
+- Dependency graph builder with class/method nodes, call/uses/extends edges, and
+  a reverse index for dependent lookups.
+- `analyze` reports graph node and edge counts after classification.
+- Graph builder regression test on the `dart_call_chain` fixture
+  (`getPortfolio` <- `fetchHoldings` <- `load`).
+
 ## [0.0.5]
 
 ### Added

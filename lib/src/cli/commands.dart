@@ -7,12 +7,14 @@ import 'package:path/path.dart' as p;
 import '../analyzer/ast_extractor.dart';
 import '../analyzer/classifiers.dart';
 import '../analyzer/project_analyzer.dart';
+import '../graph/edge.dart';
+import '../graph/graph_builder.dart';
 import '../model/node_kind.dart';
 import '../model/project_context.dart';
 import '../utils/logger.dart';
 import 'exit_codes.dart';
 
-const String packageVersion = '0.0.5';
+const String packageVersion = '0.0.6';
 
 Future<int> runBlastRadius(List<String> args) async {
   final runner = BlastRadiusCommandRunner();
@@ -311,7 +313,7 @@ class AnalyzeCommand extends Command<int> with GlobalOptions {
 
   @override
   String get description =>
-      'Discover a Flutter project, extract AST symbols, and classify types.';
+      'Discover a Flutter project, extract AST, classify types, and build the dependency graph.';
 
   @override
   Future<int> run() async {
@@ -336,12 +338,14 @@ class AnalyzeCommand extends Command<int> with GlobalOptions {
       final classifier = ClassClassifier();
       final classified = classifier.classifyAll(ast.classes);
       final kindCounts = classifier.countByKind(classified);
+      final graph = GraphBuilder().build(ast: ast, classified: classified);
 
       logger.info('Classes   ${ast.classes.length}');
       logger.info('Methods   ${ast.methods.length}');
       logger.info(
         'Calls     ${ast.calls.length} (${ast.resolvedCallCount} resolved)',
       );
+      logger.info('Graph     ${graph.nodeCount} nodes, ${graph.edgeCount} edges');
       logger.info('Kinds');
       for (final kind in NodeKind.values) {
         final count = kindCounts[kind];
@@ -355,12 +359,10 @@ class AnalyzeCommand extends Command<int> with GlobalOptions {
         for (final item in classified) {
           logger.debug('${item.kind.label}: ${item.name}');
         }
-        for (final call in ast.calls.where((c) => c.isResolved)) {
-          final from = [
-            if (call.fromClass != null) call.fromClass,
-            if (call.fromMethod != null) call.fromMethod,
-          ].join('.');
-          logger.debug('$from -> ${call.targetQualifiedName}');
+        for (final edge in graph.edges.where((e) => e.kind == EdgeKind.calls)) {
+          final from = graph.nodeById(edge.fromId)?.displayName ?? edge.fromId;
+          final to = graph.nodeById(edge.toId)?.displayName ?? edge.toId;
+          logger.debug('edge calls: $from -> $to');
         }
       }
     } on AstExtractionException catch (e) {
