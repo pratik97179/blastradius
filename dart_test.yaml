@@ -3,4 +3,5 @@ paths:
   - test/analyzer
   - test/graph
   - test/engine
+  - test/diff
   - test/fixtures/fixture_layout_test.dart

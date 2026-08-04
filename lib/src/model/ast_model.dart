@@ -6,6 +6,8 @@ class DeclaredClass {
     this.superclassName,
     this.mixinNames = const [],
     this.interfaceNames = const [],
+    this.startLine = 0,
+    this.endLine = 0,
   });
 
   final String name;
@@ -14,6 +16,8 @@ class DeclaredClass {
   final List<String> mixinNames;
   final List<String> interfaceNames;
   final List<String> methods;
+  final int startLine;
+  final int endLine;
 
   List<String> get hierarchyTypeNames => [
         if (superclassName != null) superclassName!,
@@ -29,6 +33,7 @@ class DeclaredMethod {
     required this.offset,
     required this.line,
     this.className,
+    this.endLine = 0,
   });
 
   final String name;
@@ -36,9 +41,12 @@ class DeclaredMethod {
   final String? className;
   final int offset;
   final int line;
+  final int endLine;
 
   String get qualifiedName =>
       className == null ? name : '$className.$name';
+
+  int get startLine => line;
 }
 
 class ResolvedCall {

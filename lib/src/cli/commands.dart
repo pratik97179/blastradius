@@ -8,6 +8,9 @@ import '../analyzer/analysis_pipeline.dart';
 import '../analyzer/ast_extractor.dart';
 import '../analyzer/classifiers.dart';
 import '../analyzer/project_analyzer.dart';
+import '../diff/blast_result_merger.dart';
+import '../diff/diff_symbol_mapper.dart';
+import '../diff/git_diff_parser.dart';
 import '../engine/blast_radius_engine.dart';
 import '../engine/symbol_resolver.dart';
 import '../graph/edge.dart';
@@ -19,7 +22,7 @@ import '../report/console_report.dart';
 import '../utils/logger.dart';
 import 'exit_codes.dart';
 
-const String packageVersion = '0.0.7';
+const String packageVersion = '0.0.8';
 
 Future<int> runBlastRadius(List<String> args) async {
   final runner = BlastRadiusCommandRunner();
@@ -353,11 +356,74 @@ class DiffCommand extends Command<int> with GlobalOptions {
 
     final base = argResults!['base'] as String;
     final format = argResults!['format'] as String;
-    logger.info('BlastRadius $packageVersion');
-    logger.info('Project ${context.packageName} (${context.dartFileCount} dart files)');
-    logger.info('Command acknowledged: diff --base $base --format $format');
-    logger.info('Analysis not implemented yet.');
-    return ExitCodes.notImplemented;
+
+    try {
+      final hunks = await GitDiffParser().collectHunks(
+        projectRoot: context.rootPath,
+        base: base,
+      );
+      final snapshot = await AnalysisPipeline().run(context);
+      final seeds = DiffSymbolMapper().mapToSeeds(
+        ast: snapshot.ast,
+        graph: snapshot.graph,
+        hunks: hunks,
+        projectRoot: context.rootPath,
+      );
+
+      final changedFiles = hunks.map((h) => h.relativePath).toSet().toList()
+        ..sort();
+
+      final BlastResult result;
+      if (seeds.isEmpty) {
+        result = BlastResultMerger().merge(
+          const [],
+          changedFiles: changedFiles,
+        );
+      } else {
+        final single = BlastRadiusEngine().trace(
+          graph: snapshot.graph,
+          seeds: seeds,
+          candidateTestFiles: context.dartFiles
+              .where((f) => f.endsWith('_test.dart'))
+              .toList(growable: false),
+        );
+        result = BlastResult(
+          changed: single.changed,
+          changedFiles: changedFiles,
+          repositories: single.repositories,
+          stateManagers: single.stateManagers,
+          screens: single.screens,
+          widgets: single.widgets,
+          services: single.services,
+          suggestedTests: single.suggestedTests,
+          risk: single.risk,
+          confidence: single.confidence,
+        );
+      }
+
+      if (format == 'json') {
+        logger.info(
+          _toJsonLite(
+            result.changed,
+            result.screens,
+            result.risk.label,
+            result.confidence,
+          ),
+        );
+      } else if (format == 'md') {
+        logger.info('# BlastRadius\n');
+        logger.info(ConsoleReport().render(result));
+      } else {
+        logger.info(ConsoleReport().render(result));
+      }
+      return ExitCodes.success;
+    } on GitDiffException catch (e) {
+      logger.error(e.message);
+      return ExitCodes.projectError;
+    } on AstExtractionException catch (e) {
+      logger.error(e.message);
+      return ExitCodes.projectError;
+    }
   }
 }
 

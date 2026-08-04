@@ -2,6 +2,20 @@
 
 All notable changes to BlastRadius are documented in this file.
 
+## [0.0.8]
+
+### Added
+
+- Git diff integration: `diff` reads working-tree changes vs a base ref (default
+  `HEAD`), maps hunks to methods/classes, and unions their blast radius.
+- Diff hunk parser that scopes changes to the analyzed project even when the
+  git root is a parent directory.
+- Console report `Changed Files` section for diff-driven runs.
+
+### Changed
+
+- AST declarations now capture start/end line ranges for hunk-to-symbol mapping.
+
 ## [0.0.7]
 
 ### Added

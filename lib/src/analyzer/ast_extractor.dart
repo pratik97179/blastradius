@@ -92,6 +92,8 @@ class _ExtractionVisitor extends RecursiveAstVisitor<void> {
                 .toList(growable: false) ??
             const [],
         methods: methodNames,
+        startLine: _lineFor(node),
+        endLine: _endLineFor(node),
       ),
     );
 
@@ -112,6 +114,7 @@ class _ExtractionVisitor extends RecursiveAstVisitor<void> {
         filePath: filePath,
         offset: node.name.offset,
         line: _lineFor(node),
+        endLine: _endLineFor(node),
       ),
     );
 
@@ -132,6 +135,7 @@ class _ExtractionVisitor extends RecursiveAstVisitor<void> {
         filePath: filePath,
         offset: node.name.offset,
         line: _lineFor(node),
+        endLine: _endLineFor(node),
       ),
     );
     super.visitFunctionDeclaration(node);
@@ -204,6 +208,14 @@ class _ExtractionVisitor extends RecursiveAstVisitor<void> {
     final unit = node.root;
     if (unit is CompilationUnit) {
       return unit.lineInfo.getLocation(node.offset).lineNumber;
+    }
+    return 0;
+  }
+
+  int _endLineFor(AstNode node) {
+    final unit = node.root;
+    if (unit is CompilationUnit) {
+      return unit.lineInfo.getLocation(node.end).lineNumber;
     }
     return 0;
   }

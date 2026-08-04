@@ -19,9 +19,11 @@ class BlastResult {
     required this.suggestedTests,
     required this.risk,
     required this.confidence,
+    this.changedFiles = const [],
   });
 
   final List<String> changed;
+  final List<String> changedFiles;
   final List<String> repositories;
   final List<String> stateManagers;
   final List<String> screens;

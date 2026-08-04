@@ -62,9 +62,9 @@ void main() {
       expect(code, ExitCodes.usageError);
     });
 
-    test('diff validates project then reports not implemented', () async {
+    test('diff runs against the enclosing git repository', () async {
       final code = await runBlastRadius(['-p', fixture, 'diff']);
-      expect(code, ExitCodes.notImplemented);
+      expect(code, ExitCodes.success);
     });
   });
 }

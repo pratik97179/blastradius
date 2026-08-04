@@ -8,6 +8,9 @@ class ConsoleReport {
       ..writeln('BlastRadius')
       ..writeln();
 
+    if (result.changedFiles.isNotEmpty) {
+      _section(buffer, 'Changed Files', result.changedFiles);
+    }
     _section(buffer, 'Changed', result.changed);
     _section(buffer, 'Affected Repositories', result.repositories);
     _section(buffer, 'Affected Services', result.services);

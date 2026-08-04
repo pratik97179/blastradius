@@ -49,7 +49,7 @@ Large Flutter codebases hide impact behind services, repositories, Blocs, and ro
 | Class classifiers | Ready |
 | Dependency graph | Ready |
 | Blast radius engine / `trace` | Ready |
-| `diff` analysis | Next |
+| `diff` analysis | Ready |
 | Console report | Ready |
 | JSON / Markdown reports | Partial |
 
@@ -83,8 +83,9 @@ blastradius -p path/to/flutter_app trace method getPortfolio
 blastradius -p path/to/flutter_app trace file lib/services/portfolio_service.dart
 blastradius -p path/to/flutter_app trace class PortfolioRepository
 
-# Diff (not implemented yet)
-blastradius -p path/to/flutter_app diff --base HEAD
+# Diff blast radius for local git changes
+blastradius -p path/to/flutter_app diff
+blastradius -p path/to/flutter_app diff --base main
 ```
 
 Global flags: `--project` (`-p`), `--verbose` (`-v`), `--version` (`-V`).
@@ -93,8 +94,7 @@ Global flags: `--project` (`-p`), `--verbose` (`-v`), `--version` (`-V`).
 |-----------|---------|
 | `0` | Success |
 | `1` | Usage / symbol resolution error |
-| `2` | Project discovery failed |
-| `3` | Command acknowledged, not implemented yet (`diff`) |
+| `2` | Project / git discovery failed |
 
 See [CHANGELOG.md](CHANGELOG.md).
 
