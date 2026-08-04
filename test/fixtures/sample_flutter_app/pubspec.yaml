@@ -1,0 +1,14 @@
+name: sample_flutter_app
+description: Minimal Flutter-shaped fixture for BlastRadius discovery tests.
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

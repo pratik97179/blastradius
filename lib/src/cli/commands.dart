@@ -4,15 +4,13 @@ import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
 
+import '../analyzer/project_analyzer.dart';
+import '../model/project_context.dart';
 import '../utils/logger.dart';
 import 'exit_codes.dart';
 
-/// Package version mirrored from pubspec.
-const String packageVersion = '0.0.1';
+const String packageVersion = '0.0.2';
 
-/// Parses argv and dispatches BlastRadius commands.
-///
-/// Returns a process exit code.
 Future<int> runBlastRadius(List<String> args) async {
   final runner = BlastRadiusCommandRunner();
   try {
@@ -66,8 +64,6 @@ class BlastRadiusCommandRunner extends CommandRunner<int> {
       return ExitCodes.success;
     }
 
-    // `CommandRunner.run` normally requires a command; allow bare `--help` /
-    // empty argv to print usage without a usage error.
     if (argResults.command == null &&
         (argResults.rest.isEmpty || argResults['help'] == true)) {
       stdout.write(usage);
@@ -97,6 +93,17 @@ mixin GlobalOptions on Command<int> {
   Logger get logger => blastRunner.loggerFrom(globalResults!);
 
   String get projectPath => blastRunner.projectFrom(globalResults!);
+
+  ProjectContext? discoverProject() {
+    try {
+      final context = ProjectAnalyzer().discover(projectPath);
+      logger.debug('discovered ${context.packageName} (${context.dartFileCount} dart files)');
+      return context;
+    } on ProjectDiscoveryException catch (e) {
+      logger.error(e.message);
+      return null;
+    }
+  }
 }
 
 class TraceCommand extends Command<int> with GlobalOptions {
@@ -150,12 +157,17 @@ class TraceMethodCommand extends Command<int> with GlobalOptions {
     if (argResults!.rest.isEmpty) {
       throw UsageException('Missing method name.', usage);
     }
+    final context = discoverProject();
+    if (context == null) {
+      return ExitCodes.projectError;
+    }
+
     final methodName = argResults!.rest.first;
     final file = argResults!['file'] as String?;
     final format = argResults!['format'] as String;
     return _notImplemented(
       logger: logger,
-      projectPath: projectPath,
+      context: context,
       summary:
           'trace method $methodName'
           '${file != null ? ' --file $file' : ''} --format $format',
@@ -187,11 +199,16 @@ class TraceFileCommand extends Command<int> with GlobalOptions {
     if (argResults!.rest.isEmpty) {
       throw UsageException('Missing file path.', usage);
     }
+    final context = discoverProject();
+    if (context == null) {
+      return ExitCodes.projectError;
+    }
+
     final filePath = argResults!.rest.first;
     final format = argResults!['format'] as String;
     return _notImplemented(
       logger: logger,
-      projectPath: projectPath,
+      context: context,
       summary: 'trace file $filePath --format $format',
     );
   }
@@ -227,12 +244,17 @@ class TraceClassCommand extends Command<int> with GlobalOptions {
     if (argResults!.rest.isEmpty) {
       throw UsageException('Missing class name.', usage);
     }
+    final context = discoverProject();
+    if (context == null) {
+      return ExitCodes.projectError;
+    }
+
     final className = argResults!.rest.first;
     final file = argResults!['file'] as String?;
     final format = argResults!['format'] as String;
     return _notImplemented(
       logger: logger,
-      projectPath: projectPath,
+      context: context,
       summary:
           'trace class $className'
           '${file != null ? ' --file $file' : ''} --format $format',
@@ -265,11 +287,16 @@ class DiffCommand extends Command<int> with GlobalOptions {
 
   @override
   Future<int> run() async {
+    final context = discoverProject();
+    if (context == null) {
+      return ExitCodes.projectError;
+    }
+
     final base = argResults!['base'] as String;
     final format = argResults!['format'] as String;
     return _notImplemented(
       logger: logger,
-      projectPath: projectPath,
+      context: context,
       summary: 'diff --base $base --format $format',
     );
   }
@@ -281,26 +308,37 @@ class AnalyzeCommand extends Command<int> with GlobalOptions {
 
   @override
   String get description =>
-      'Build and cache the project dependency graph (warm-up).';
+      'Discover a Flutter project and index Dart sources (graph warm-up comes later).';
 
   @override
   Future<int> run() async {
-    return _notImplemented(
-      logger: logger,
-      projectPath: projectPath,
-      summary: 'analyze',
-    );
+    final context = discoverProject();
+    if (context == null) {
+      return ExitCodes.projectError;
+    }
+
+    logger.info('BlastRadius $packageVersion');
+    logger.info('Project   ${context.rootPath}');
+    logger.info('Package   ${context.packageName}');
+    logger.info('Pubspec   ${context.pubspecPath}');
+    logger.info('Dart files ${context.dartFileCount}');
+    if (logger.verbose) {
+      for (final file in context.dartFiles) {
+        logger.debug(p.relative(file, from: context.rootPath));
+      }
+    }
+    return ExitCodes.success;
   }
 }
 
 Future<int> _notImplemented({
   required Logger logger,
-  required String projectPath,
+  required ProjectContext context,
   required String summary,
 }) async {
   logger.info('BlastRadius $packageVersion');
-  logger.debug('project=$projectPath');
+  logger.info('Project ${context.packageName} (${context.dartFileCount} dart files)');
   logger.info('Command acknowledged: $summary');
-  logger.info('Not implemented yet. Project root: $projectPath');
+  logger.info('Analysis not implemented yet.');
   return ExitCodes.notImplemented;
 }

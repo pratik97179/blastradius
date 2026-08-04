@@ -2,7 +2,7 @@
 
 **Know your blast radius before you commit.**
 
-A CLI static analysis tool for Flutter apps. Point it at a change and see which screens, routes, state managers, and repositories sit in the blast radius — before review, QA, or merge.
+A CLI static analysis tool for Flutter apps. Point it at a change and see which screens, routes, state managers, and repositories sit in the blast radius, before review, QA, or merge.
 
 ```text
 ────────────────────────────────────────────
@@ -30,7 +30,7 @@ Confidence  91%
 
 ## Why
 
-IDE “Find References” answers *who calls this*.
+IDE "Find References" answers *who calls this*.
 
 BlastRadius answers *what user-facing surface might break*.
 
@@ -38,13 +38,13 @@ Large Flutter codebases hide impact behind services, repositories, Blocs, and ro
 
 ## Status
 
-**Early MVP — fail fast.** APIs and output will move. Heuristics are best-effort, not guarantees.
+**Early MVP, fail fast.** APIs and output will move. Heuristics are best-effort, not guarantees.
 
 | Capability | State |
 |------------|--------|
-| CLI scaffold | Ready |
-| Command parser (`trace` / `diff` / `analyze`) | Ready (stubs) |
-| Project discovery | Next |
+| CLI command parser | Ready |
+| Project discovery | Ready |
+| AST / dependency graph | Next |
 | `trace` / `diff` analysis | Planned |
 | Console / JSON / Markdown reports | Planned |
 
@@ -68,16 +68,28 @@ dart run bin/blastradius.dart
 ```bash
 blastradius --help
 blastradius --version
+
+# Discover and index a Flutter project
+blastradius -p path/to/flutter_app analyze
+blastradius -p path/to/flutter_app analyze -v
+
+# Trace / diff (args + discovery work; analysis not implemented yet)
 blastradius -p path/to/flutter_app trace method getPortfolio
-blastradius trace file lib/services/portfolio_service.dart
-blastradius trace class PortfolioRepository --file lib/repositories/portfolio_repository.dart
-blastradius diff --base HEAD
-blastradius analyze --verbose
+blastradius -p path/to/flutter_app trace file lib/services/portfolio_service.dart
+blastradius -p path/to/flutter_app trace class PortfolioRepository
+blastradius -p path/to/flutter_app diff --base HEAD
 ```
 
 Global flags: `--project` (`-p`), `--verbose` (`-v`), `--version` (`-V`).
 
-Analysis backends are not wired yet; commands parse args and exit with code `3` (`not implemented`). See [CHANGELOG.md](CHANGELOG.md).
+| Exit code | Meaning |
+|-----------|---------|
+| `0` | Success |
+| `1` | Usage error |
+| `2` | Project discovery failed |
+| `3` | Command parsed, analysis not implemented yet |
+
+See [CHANGELOG.md](CHANGELOG.md).
 
 ## Supported patterns (MVP target)
 
@@ -98,8 +110,8 @@ Static analysis only. No app execution. Confidence scores are advisory.
 
 ## Contributing
 
-Small progressive commits. Keep the changelog short. Match existing style.
+Small progressive commits. Keep the changelog short. Match existing style. Do not use em dashes.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

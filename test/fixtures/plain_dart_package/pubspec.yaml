@@ -1,0 +1,7 @@
+name: plain_dart_package
+description: Non-Flutter package used to assert discovery rejection.
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ^3.5.0

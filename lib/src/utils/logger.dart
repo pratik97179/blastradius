@@ -1,6 +1,5 @@
 import 'dart:io';
 
-/// Thin stdout/stderr logger with optional verbose mode.
 class Logger {
   Logger({this.verbose = false});
 
