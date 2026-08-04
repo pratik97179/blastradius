@@ -43,6 +43,7 @@ Large Flutter codebases hide impact behind services, repositories, Blocs, and ro
 | Capability | State |
 |------------|--------|
 | CLI scaffold | Ready |
+| Command parser (`trace` / `diff` / `analyze`) | Ready (stubs) |
 | Project discovery | Next |
 | `trace` / `diff` analysis | Planned |
 | Console / JSON / Markdown reports | Planned |
@@ -65,14 +66,18 @@ dart run bin/blastradius.dart
 ## Usage
 
 ```bash
-blastradius                  # version / hello (stub)
-blastradius trace method <name>
-blastradius trace file <path>
-blastradius trace class <name>
-blastradius diff
+blastradius --help
+blastradius --version
+blastradius -p path/to/flutter_app trace method getPortfolio
+blastradius trace file lib/services/portfolio_service.dart
+blastradius trace class PortfolioRepository --file lib/repositories/portfolio_repository.dart
+blastradius diff --base HEAD
+blastradius analyze --verbose
 ```
 
-Commands beyond the stub will land in progressive commits. See [CHANGELOG.md](CHANGELOG.md).
+Global flags: `--project` (`-p`), `--verbose` (`-v`), `--version` (`-V`).
+
+Analysis backends are not wired yet; commands parse args and exit with code `3` (`not implemented`). See [CHANGELOG.md](CHANGELOG.md).
 
 ## Supported patterns (MVP target)
 

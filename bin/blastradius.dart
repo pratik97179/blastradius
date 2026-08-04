@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:blastradius/blastradius.dart';
 
-void main(List<String> args) {
-  final code = runBlastRadius(args);
+Future<void> main(List<String> args) async {
+  final code = await runBlastRadius(args);
   exit(code);
 }
