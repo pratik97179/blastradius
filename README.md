@@ -44,6 +44,7 @@ Large Flutter codebases hide impact behind services, repositories, Blocs, and ro
 |------------|--------|
 | CLI command parser | Ready |
 | Project discovery | Ready |
+| Portfolio fixture chain | Ready |
 | AST / dependency graph | Next |
 | `trace` / `diff` analysis | Planned |
 | Console / JSON / Markdown reports | Planned |
@@ -107,6 +108,20 @@ CLI → project index → Dart analyzer → dependency graph → blast walk → 
 ```
 
 Static analysis only. No app execution. Confidence scores are advisory.
+
+## Test fixture
+
+`test/fixtures/sample_flutter_app` models the MVP blast chain:
+
+```text
+PortfolioService.getPortfolio()
+  → PortfolioRepository
+    → PortfolioBloc
+      → PortfolioScreen / DashboardScreen / StockDetailsScreen
+        → GoRouter (+ legacy MaterialPageRoute)
+```
+
+Use it as the `--project` target while building graph and trace behavior.
 
 ## Contributing
 

@@ -9,7 +9,7 @@ import '../model/project_context.dart';
 import '../utils/logger.dart';
 import 'exit_codes.dart';
 
-const String packageVersion = '0.0.2';
+const String packageVersion = '0.0.3';
 
 Future<int> runBlastRadius(List<String> args) async {
   final runner = BlastRadiusCommandRunner();

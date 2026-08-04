@@ -1,0 +1,4 @@
+paths:
+  - test/cli
+  - test/analyzer
+  - test/fixtures/fixture_layout_test.dart

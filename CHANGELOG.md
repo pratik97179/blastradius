@@ -2,6 +2,23 @@
 
 All notable changes to BlastRadius are documented in this file.
 
+## [0.0.3]
+
+### Added
+
+- Expanded `sample_flutter_app` into the MVP portfolio dependency chain: service,
+  repository, Bloc, screens, GoRouter routes, and a legacy `MaterialPageRoute`.
+- Fixture layout regression test that locks the on-disk chain and route wiring.
+- Suggested-test placeholder files `portfolio_bloc_test.dart` and
+  `portfolio_screen_test.dart`.
+
+### Changed
+
+- Excluded `test/fixtures/**` from the tool package analyzer so Flutter fixture
+  sources do not fail host-package analysis.
+- Limited `dart test` paths so fixture-app placeholder tests are not executed by
+  the host package test runner.
+
 ## [0.0.2]
 
 ### Added
