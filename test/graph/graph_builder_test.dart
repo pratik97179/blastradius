@@ -25,7 +25,7 @@ void main() {
   test('builds call chain Service <- Repository <- Loader', () async {
     final lib = p.join(root, 'lib');
     final dartFiles = Directory(lib)
-        .listSync()
+        .listSync(recursive: true)
         .whereType<File>()
         .where((f) => f.path.endsWith('.dart'))
         .map((f) => p.normalize(f.path))
@@ -40,7 +40,10 @@ void main() {
     );
 
     final ast = await AstExtractor().extract(context);
-    final classified = ClassClassifier().classifyAll(ast.classes);
+    final classified = ClassClassifier().classifyAll(
+      ast.classes,
+      routeDestinationNames: ast.routeDestinationNames,
+    );
     final graph = GraphBuilder().build(ast: ast, classified: classified);
 
     expect(graph.nodeCount, greaterThanOrEqualTo(6));

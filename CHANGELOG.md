@@ -11,10 +11,16 @@ All notable changes to BlastRadius are documented in this file.
 - Full Markdown blast-radius reports via `--format md` (checklist-style sections
   for PR comments and reviews).
 - Shared `ReportRenderer` used by both `trace` and `diff`.
+- Route destination extraction from `GoRoute`, `MaterialPageRoute`, and
+  `CupertinoPageRoute` (`builder` / `pageBuilder` / `child`).
 
 ### Changed
 
 - Package version set to `0.1.0` for the first MVP-complete report surface.
+- Node classification uses pre-defined structural signals instead of class-name
+  suffixes: framework base types (Bloc/Cubit/ChangeNotifier/Widget), router
+  destinations, and folder segments (`pages`/`screens`, `repositories`,
+  `services`, `providers`).
 
 ## [0.0.8]
 

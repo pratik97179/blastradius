@@ -1,4 +1,4 @@
-import 'portfolio_repository.dart';
+import 'repositories/portfolio_repository.dart';
 
 class PortfolioLoader {
   PortfolioLoader(this.repository);

@@ -24,7 +24,7 @@ void main() {
   test('traces getPortfolio reverse dependents through the call chain', () async {
     final lib = p.join(root, 'lib');
     final dartFiles = Directory(lib)
-        .listSync()
+        .listSync(recursive: true)
         .whereType<File>()
         .where((f) => f.path.endsWith('.dart'))
         .map((f) => p.normalize(f.path))

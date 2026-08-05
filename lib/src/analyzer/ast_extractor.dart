@@ -6,6 +6,7 @@ import 'package:analyzer/dart/element/element.dart';
 
 import '../model/ast_model.dart';
 import '../model/project_context.dart';
+import 'kind_signals.dart';
 
 class AstExtractionException implements Exception {
   AstExtractionException(this.message);
@@ -19,7 +20,12 @@ class AstExtractionException implements Exception {
 class AstExtractor {
   Future<AstModel> extract(ProjectContext context) async {
     if (context.dartFiles.isEmpty) {
-      return const AstModel(classes: [], methods: [], calls: []);
+      return const AstModel(
+        classes: [],
+        methods: [],
+        calls: [],
+        routeDestinationNames: {},
+      );
     }
 
     final collection = AnalysisContextCollection(
@@ -29,6 +35,7 @@ class AstExtractor {
     final classes = <DeclaredClass>[];
     final methods = <DeclaredMethod>[];
     final calls = <ResolvedCall>[];
+    final routeDestinationNames = <String>{};
 
     try {
       for (final filePath in context.dartFiles) {
@@ -45,6 +52,7 @@ class AstExtractor {
         classes.addAll(visitor.classes);
         methods.addAll(visitor.methods);
         calls.addAll(visitor.calls);
+        routeDestinationNames.addAll(visitor.routeDestinationNames);
       }
     } finally {
       await collection.dispose();
@@ -52,7 +60,12 @@ class AstExtractor {
 
     classes.sort((a, b) => a.name.compareTo(b.name));
     methods.sort((a, b) => a.qualifiedName.compareTo(b.qualifiedName));
-    return AstModel(classes: classes, methods: methods, calls: calls);
+    return AstModel(
+      classes: classes,
+      methods: methods,
+      calls: calls,
+      routeDestinationNames: routeDestinationNames,
+    );
   }
 }
 
@@ -63,6 +76,7 @@ class _ExtractionVisitor extends RecursiveAstVisitor<void> {
   final List<DeclaredClass> classes = [];
   final List<DeclaredMethod> methods = [];
   final List<ResolvedCall> calls = [];
+  final Set<String> routeDestinationNames = {};
 
   String? _currentClass;
   String? _currentMethod;
@@ -162,7 +176,25 @@ class _ExtractionVisitor extends RecursiveAstVisitor<void> {
       element: constructorName.element,
       targetClass: typeName,
     );
+
+    if (KindSignals.routeConstructors.contains(typeName)) {
+      _collectRouteDestinations(node.argumentList);
+    }
+
     super.visitInstanceCreationExpression(node);
+  }
+
+  void _collectRouteDestinations(ArgumentList argumentList) {
+    final collector = _RouteDestinationCollector(routeDestinationNames);
+    for (final arg in argumentList.arguments) {
+      if (arg is! NamedExpression) {
+        continue;
+      }
+      if (!KindSignals.routeDestinationArgs.contains(arg.name.label.name)) {
+        continue;
+      }
+      arg.expression.accept(collector);
+    }
   }
 
   void _recordCall({
@@ -218,5 +250,17 @@ class _ExtractionVisitor extends RecursiveAstVisitor<void> {
       return unit.lineInfo.getLocation(node.end).lineNumber;
     }
     return 0;
+  }
+}
+
+class _RouteDestinationCollector extends RecursiveAstVisitor<void> {
+  _RouteDestinationCollector(this.names);
+
+  final Set<String> names;
+
+  @override
+  void visitInstanceCreationExpression(InstanceCreationExpression node) {
+    names.add(node.constructorName.type.name.lexeme);
+    super.visitInstanceCreationExpression(node);
   }
 }

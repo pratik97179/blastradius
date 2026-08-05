@@ -118,10 +118,14 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 ## Supported patterns (MVP)
 
-- Repository / service layers
-- Bloc & Cubit
-- Provider / ChangeNotifier
-- GoRouter, Navigator, MaterialPageRoute
+Classification uses pre-defined structure, not class-name suffixes:
+
+| Kind | Signal |
+|------|--------|
+| screen | Widget constructed in `GoRoute` / `MaterialPageRoute` / `CupertinoPageRoute`, or under a `pages` / `screens` folder |
+| bloc / cubit / changeNotifier | Extends / mixes in `Bloc`, `Cubit`, or `ChangeNotifier` |
+| repository / service / provider | File under a `repositories`, `services`, or `providers` folder |
+| widget | Extends `StatelessWidget` / `StatefulWidget` / `Widget` (and is not a screen) |
 
 **Not in MVP:** Riverpod, GetX, MobX, Redux, AutoRoute, runtime execution, autofix.
 

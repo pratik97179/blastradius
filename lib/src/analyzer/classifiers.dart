@@ -1,5 +1,8 @@
+import 'package:path/path.dart' as p;
+
 import '../model/ast_model.dart';
 import '../model/node_kind.dart';
+import 'kind_signals.dart';
 
 class ClassifiedClass {
   const ClassifiedClass({
@@ -14,49 +17,61 @@ class ClassifiedClass {
 }
 
 class ClassClassifier {
-  List<ClassifiedClass> classifyAll(Iterable<DeclaredClass> classes) {
+  List<ClassifiedClass> classifyAll(
+    Iterable<DeclaredClass> classes, {
+    Set<String> routeDestinationNames = const {},
+  }) {
     return classes
         .map(
           (declaration) => ClassifiedClass(
             declaration: declaration,
-            kind: classify(declaration),
+            kind: classify(
+              declaration,
+              routeDestinationNames: routeDestinationNames,
+            ),
           ),
         )
         .toList(growable: false);
   }
 
-  NodeKind classify(DeclaredClass declaration) {
-    final name = declaration.name;
+  NodeKind classify(
+    DeclaredClass declaration, {
+    Set<String> routeDestinationNames = const {},
+  }) {
     final hierarchy = declaration.hierarchyTypeNames;
+    final pathSegments = _pathSegments(declaration.filePath);
 
-    if (_matchesType(hierarchy, 'Cubit') || name.endsWith('Cubit')) {
+    if (_matchesAny(hierarchy, KindSignals.cubitBases)) {
       return NodeKind.cubit;
     }
-    if (_matchesType(hierarchy, 'Bloc') || name.endsWith('Bloc')) {
+    if (_matchesAny(hierarchy, KindSignals.blocBases)) {
       return NodeKind.bloc;
     }
-    if (_isScreenName(name)) {
-      return NodeKind.screen;
-    }
-    if (_matchesType(hierarchy, 'ChangeNotifier') ||
-        name.endsWith('ChangeNotifier') ||
-        name.endsWith('Notifier')) {
+    if (_matchesAny(hierarchy, KindSignals.changeNotifierBases)) {
       return NodeKind.changeNotifier;
     }
-    if (_matchesType(hierarchy, 'StatelessWidget') ||
-        _matchesType(hierarchy, 'StatefulWidget') ||
-        _matchesType(hierarchy, 'Widget')) {
-      return NodeKind.widget;
+
+    final isWidget = _matchesAny(hierarchy, KindSignals.widgetBases);
+    if (isWidget &&
+        (routeDestinationNames.contains(declaration.name) ||
+            _hasSegment(pathSegments, KindSignals.screenFolders))) {
+      return NodeKind.screen;
     }
-    if (name.endsWith('Repository')) {
+
+    if (_hasSegment(pathSegments, KindSignals.repositoryFolders)) {
       return NodeKind.repository;
     }
-    if (name.endsWith('Service')) {
+    if (_hasSegment(pathSegments, KindSignals.serviceFolders)) {
       return NodeKind.service;
     }
-    if (name.endsWith('Provider')) {
+    if (_hasSegment(pathSegments, KindSignals.providerFolders)) {
       return NodeKind.provider;
     }
+
+    if (isWidget) {
+      return NodeKind.widget;
+    }
+
     return NodeKind.other;
   }
 
@@ -68,17 +83,27 @@ class ClassClassifier {
     return counts;
   }
 
-  bool _isScreenName(String name) =>
-      name.endsWith('Screen') || name.endsWith('Page');
-
-  bool _matchesType(Iterable<String> hierarchy, String typeName) {
+  bool _matchesAny(Iterable<String> hierarchy, Set<String> bases) {
     for (final entry in hierarchy) {
-      final simple = _simpleTypeName(entry);
-      if (simple == typeName) {
+      if (bases.contains(_simpleTypeName(entry))) {
         return true;
       }
     }
     return false;
+  }
+
+  bool _hasSegment(Iterable<String> segments, Set<String> folderNames) {
+    for (final segment in segments) {
+      if (folderNames.contains(segment)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  List<String> _pathSegments(String filePath) {
+    final normalized = p.normalize(filePath).replaceAll('\\', '/');
+    return normalized.split('/').where((s) => s.isNotEmpty).toList();
   }
 
   String _simpleTypeName(String typeSource) {

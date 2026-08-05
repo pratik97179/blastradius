@@ -1,4 +1,4 @@
-import 'portfolio_service.dart';
+import '../services/portfolio_service.dart';
 
 class PortfolioRepository {
   PortfolioRepository(this.service);

@@ -22,7 +22,10 @@ class AnalysisSnapshot {
 class AnalysisPipeline {
   Future<AnalysisSnapshot> run(ProjectContext context) async {
     final ast = await AstExtractor().extract(context);
-    final classified = ClassClassifier().classifyAll(ast.classes);
+    final classified = ClassClassifier().classifyAll(
+      ast.classes,
+      routeDestinationNames: ast.routeDestinationNames,
+    );
     final graph = GraphBuilder().build(ast: ast, classified: classified);
     return AnalysisSnapshot(
       context: context,

@@ -77,11 +77,15 @@ class AstModel {
     required this.classes,
     required this.methods,
     required this.calls,
+    this.routeDestinationNames = const {},
   });
 
   final List<DeclaredClass> classes;
   final List<DeclaredMethod> methods;
   final List<ResolvedCall> calls;
+
+  /// Widget class names constructed inside GoRoute / *PageRoute destinations.
+  final Set<String> routeDestinationNames;
 
   int get resolvedCallCount => calls.where((c) => c.isResolved).length;
 }
