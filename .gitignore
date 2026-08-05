@@ -35,3 +35,7 @@ test/fixtures/**/.packages
 # Secrets
 .env
 .env.*
+
+# Dashboard (commit dist/, ignore Node install)
+web/dashboard/node_modules/
+web/dashboard/.vite/

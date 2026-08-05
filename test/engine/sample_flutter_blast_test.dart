@@ -58,7 +58,7 @@ void main() {
       candidateTestFiles: context.dartFiles
           .where((f) => f.endsWith('_test.dart'))
           .toList(growable: false),
-    );
+    ).result;
 
     expect(result.screens, contains('DashboardScreen'));
     expect(result.screens, contains('PortfolioScreen'));

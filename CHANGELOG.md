@@ -2,6 +2,21 @@
 
 All notable changes to BlastRadius are documented in this file.
 
+## [0.3.0]
+
+### Added
+
+- `BlastTrace` walk metadata (`seedIds`, `scoresByNodeId`) from the blast engine.
+- `VisualPayload` JSON contract with summary + graph nodes/edges for visualization.
+- Vite + React + TypeScript dashboard under `web/dashboard` (Cytoscape graph).
+- `blastradius view` command: `method`, `file`, `class`, `diff`, and `graph`.
+- Local dashboard server (`/api/payload.json`) and `--export` offline folder.
+- CI Node step to build the dashboard before Dart verify.
+
+### Changed
+
+- Package version set to `0.3.0`.
+
 ## [0.2.3]
 
 ### Added

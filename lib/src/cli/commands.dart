@@ -21,8 +21,9 @@ import '../model/project_context.dart';
 import '../report/report_renderer.dart';
 import '../utils/logger.dart';
 import 'exit_codes.dart';
+import 'view_commands.dart';
 
-const String packageVersion = '0.2.3';
+const String packageVersion = '0.3.0';
 
 Future<int> runBlastRadius(List<String> args) async {
   final runner = BlastRadiusCommandRunner();
@@ -67,6 +68,7 @@ class BlastRadiusCommandRunner extends CommandRunner<int> {
     addCommand(TraceCommand());
     addCommand(DiffCommand());
     addCommand(AnalyzeCommand());
+    addCommand(ViewCommand());
   }
 
   @override
@@ -128,7 +130,7 @@ mixin GlobalOptions on Command<int> {
     try {
       final snapshot = await AnalysisPipeline().run(context);
       final seeds = resolveSeeds(snapshot);
-      final result = BlastRadiusEngine().trace(
+      final trace = BlastRadiusEngine().trace(
         graph: snapshot.graph,
         seeds: seeds,
         candidateTestFiles: context.dartFiles
@@ -136,7 +138,7 @@ mixin GlobalOptions on Command<int> {
             .toList(growable: false),
       );
 
-      logger.info(ReportRenderer().render(result, format));
+      logger.info(ReportRenderer().render(trace.result, format));
       return ExitCodes.success;
     } on AstExtractionException catch (e) {
       logger.error(e.message);
@@ -379,7 +381,7 @@ class DiffCommand extends Command<int> with GlobalOptions {
           candidateTestFiles: context.dartFiles
               .where((f) => f.endsWith('_test.dart'))
               .toList(growable: false),
-        );
+        ).result;
         result = BlastResult(
           changed: single.changed,
           changedFiles: changedFiles,

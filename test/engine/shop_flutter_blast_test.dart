@@ -78,7 +78,7 @@ void main() {
       candidateTestFiles: context.dartFiles
           .where((f) => f.endsWith('_test.dart'))
           .toList(growable: false),
-    );
+    ).result;
 
     expect(result.changed, contains('CatalogService.fetchItems'));
     expect(result.repositories, contains('CatalogRepository'));

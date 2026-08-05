@@ -43,13 +43,15 @@ void main() {
       snapshot.graph,
       methodName: 'fetchProfile',
     );
-    final result = BlastRadiusEngine().trace(
+    final trace = BlastRadiusEngine().trace(
       graph: snapshot.graph,
       seeds: seeds,
     );
 
-    expect(result.changed, contains('UserService.fetchProfile'));
-    expect(result.repositories, contains('UserRepository'));
-    expect(result.services, isEmpty);
+    expect(trace.result.changed, contains('UserService.fetchProfile'));
+    expect(trace.result.repositories, contains('UserRepository'));
+    expect(trace.result.services, isEmpty);
+    expect(trace.seedIds, isNotEmpty);
+    expect(trace.scoresByNodeId.length, greaterThan(trace.seedIds.length));
   });
 }

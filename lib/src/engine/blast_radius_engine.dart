@@ -1,6 +1,7 @@
 import '../graph/graph.dart';
 import '../graph/node.dart';
 import '../model/blast_result.dart';
+import '../model/blast_trace.dart';
 import '../model/node_kind.dart';
 import 'confidence_engine.dart';
 
@@ -17,22 +18,26 @@ class BlastRadiusEngine {
     NodeKind.provider,
   };
 
-  BlastResult trace({
+  BlastTrace trace({
     required DependencyGraph graph,
     required List<GraphNode> seeds,
     List<String> candidateTestFiles = const [],
   }) {
     if (seeds.isEmpty) {
-      return BlastResult(
-        changed: const [],
-        repositories: const [],
-        stateManagers: const [],
-        screens: const [],
-        widgets: const [],
-        services: const [],
-        suggestedTests: const [],
-        risk: RiskLevel.low,
-        confidence: 0.0,
+      return const BlastTrace(
+        result: BlastResult(
+          changed: [],
+          repositories: [],
+          stateManagers: [],
+          screens: [],
+          widgets: [],
+          services: [],
+          suggestedTests: [],
+          risk: RiskLevel.low,
+          confidence: 0.0,
+        ),
+        seedIds: {},
+        scoresByNodeId: {},
       );
     }
 
@@ -106,7 +111,7 @@ class BlastRadiusEngine {
       candidateTestFiles: candidateTestFiles,
     );
 
-    return BlastResult(
+    final result = BlastResult(
       changed: seeds.map((s) => s.displayName).toSet().toList()..sort(),
       repositories: repositories,
       stateManagers: stateManagers,
@@ -123,6 +128,12 @@ class BlastRadiusEngine {
             widgets.length,
       ),
       confidence: _confidence.overall(endpointScores),
+    );
+
+    return BlastTrace(
+      result: result,
+      seedIds: Set<String>.unmodifiable(seedIds),
+      scoresByNodeId: Map<String, double>.unmodifiable(bestScore),
     );
   }
 
