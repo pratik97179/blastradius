@@ -30,18 +30,13 @@ class ProjectAnalyzer {
     final pubspecFile = File(p.join(root, 'pubspec.yaml'));
     if (!pubspecFile.existsSync()) {
       throw ProjectDiscoveryException(
-        'No pubspec.yaml found at $root. Pass --project to a Flutter package root.',
+        'No pubspec.yaml found at $root. Pass --project to a Dart or Flutter package root.',
       );
     }
 
     final yaml = _loadYaml(pubspecFile);
     final packageName = _readPackageName(yaml, pubspecFile.path);
-    if (!_isFlutterProject(yaml)) {
-      throw ProjectDiscoveryException(
-        'Package "$packageName" does not look like a Flutter project '
-        '(missing flutter SDK dependency or flutter: config).',
-      );
-    }
+    final isFlutter = _isFlutterProject(yaml);
 
     final dartFiles = _indexDartFiles(root);
     return ProjectContext(
@@ -49,6 +44,7 @@ class ProjectAnalyzer {
       packageName: packageName,
       pubspecPath: pubspecFile.path,
       dartFiles: dartFiles,
+      isFlutter: isFlutter,
     );
   }
 

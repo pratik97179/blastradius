@@ -114,7 +114,14 @@ class BlastRadiusEngine {
       widgets: widgets,
       services: services,
       suggestedTests: suggestedTests,
-      risk: _confidence.riskFor(screenCount: screens.length),
+      risk: _confidence.riskFor(
+        screenCount: screens.length,
+        surfaceCount: repositories.length +
+            services.length +
+            stateManagers.length +
+            screens.length +
+            widgets.length,
+      ),
       confidence: _confidence.overall(endpointScores),
     );
   }

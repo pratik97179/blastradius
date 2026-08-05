@@ -22,13 +22,19 @@ class ConfidenceEngine {
     return sum / scores.length;
   }
 
-  RiskLevel riskFor({required int screenCount}) {
-    if (screenCount >= 3) {
+  /// Screen count drives Flutter UX risk; [surfaceCount] covers repos,
+  /// services, state managers, widgets, and screens for Dart packages too.
+  RiskLevel riskFor({
+    required int screenCount,
+    int surfaceCount = 0,
+  }) {
+    if (screenCount >= 3 || surfaceCount >= 5) {
       return RiskLevel.high;
     }
-    if (screenCount >= 1) {
+    if (screenCount >= 1 || surfaceCount >= 2) {
       return RiskLevel.medium;
     }
     return RiskLevel.low;
   }
 }
+

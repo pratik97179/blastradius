@@ -2,6 +2,41 @@
 
 All notable changes to BlastRadius are documented in this file.
 
+## [0.2.0]
+
+### Added
+
+- Dart package discovery: any `pubspec.yaml` root is accepted; Flutter is
+  optional enrichment via `ProjectContext.isFlutter`.
+- `analyze` prints `Platform  dart|flutter`.
+- CLI coverage for `dart_call_chain` as a first-class Dart target.
+
+### Changed
+
+- Product positioning is Dart-first with Flutter KindSignals on the same
+  pipeline (no Flutter-only discovery gate).
+- Console and Markdown reports omit empty affected sections so Dart traces
+  are not padded with unused Flutter labels.
+- Risk scoring also considers total affected surface count (repos, services,
+  state managers, screens, widgets), not screens alone.
+- Empty-walk copy refers to graph dependents, not only user-facing surfaces.
+- Package version set to `0.2.0`.
+
+## [0.1.3]
+
+### Added
+
+- Top-level function call scope so router factories like `createAppRouter`
+  record call edges to constructed screens.
+- DI type-usage edges from field declarations and simple constructor
+  parameters (for example `PortfolioBloc` -> `PortfolioRepository`).
+
+### Changed
+
+- Type-usage graph wiring supports method-only origins (top-level functions)
+  without a containing class.
+- Package version set to `0.1.3`.
+
 ## [0.1.2]
 
 ### Added

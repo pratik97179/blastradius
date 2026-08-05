@@ -148,9 +148,13 @@ class _ExtractionVisitor extends RecursiveAstVisitor<void> {
       return;
     }
 
+    final previousMethod = _currentMethod;
+    final functionName = node.name.lexeme;
+    _currentMethod = functionName;
+
     methods.add(
       DeclaredMethod(
-        name: node.name.lexeme,
+        name: functionName,
         filePath: filePath,
         offset: node.name.offset,
         line: _lineFor(node),
@@ -158,6 +162,19 @@ class _ExtractionVisitor extends RecursiveAstVisitor<void> {
       ),
     );
     super.visitFunctionDeclaration(node);
+    _currentMethod = previousMethod;
+  }
+
+  @override
+  void visitFieldDeclaration(FieldDeclaration node) {
+    _recordTypeAnnotation(node.fields.type);
+    super.visitFieldDeclaration(node);
+  }
+
+  @override
+  void visitSimpleFormalParameter(SimpleFormalParameter node) {
+    _recordTypeAnnotation(node.type);
+    super.visitSimpleFormalParameter(node);
   }
 
   @override
@@ -174,7 +191,7 @@ class _ExtractionVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitNamedType(NamedType node) {
-    if (_currentClass != null && _isTypeArgOfStateConsumer(node)) {
+    if (_isTypeArgOfStateConsumer(node)) {
       _recordTypeUsage(node.name.lexeme);
     }
     super.visitNamedType(node);
@@ -225,8 +242,14 @@ class _ExtractionVisitor extends RecursiveAstVisitor<void> {
     return false;
   }
 
+  void _recordTypeAnnotation(TypeAnnotation? type) {
+    if (type is NamedType) {
+      _recordTypeUsage(type.name.lexeme);
+    }
+  }
+
   void _recordTypeArguments(TypeArgumentList? typeArguments) {
-    if (typeArguments == null || _currentClass == null) {
+    if (typeArguments == null) {
       return;
     }
     for (final arg in typeArguments.arguments) {
@@ -237,7 +260,10 @@ class _ExtractionVisitor extends RecursiveAstVisitor<void> {
   }
 
   void _recordTypeUsage(String targetTypeName) {
-    if (targetTypeName.isEmpty || _currentClass == null) {
+    if (targetTypeName.isEmpty) {
+      return;
+    }
+    if (_currentClass == null && _currentMethod == null) {
       return;
     }
     if (targetTypeName == _currentClass) {

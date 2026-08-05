@@ -12,18 +12,16 @@ class ConsoleReport {
       _section(buffer, 'Changed Files', result.changedFiles);
     }
     _section(buffer, 'Changed', result.changed);
-    _section(buffer, 'Affected Repositories', result.repositories);
-    _section(buffer, 'Affected Services', result.services);
-    _section(buffer, 'Affected State Managers', result.stateManagers);
-    _section(buffer, 'Affected Screens', result.screens);
-    if (result.widgets.isNotEmpty) {
-      _section(buffer, 'Affected Widgets', result.widgets);
-    }
-    _section(buffer, 'Suggested Tests', result.suggestedTests);
+    _sectionIfPresent(buffer, 'Affected Repositories', result.repositories);
+    _sectionIfPresent(buffer, 'Affected Services', result.services);
+    _sectionIfPresent(buffer, 'Affected State Managers', result.stateManagers);
+    _sectionIfPresent(buffer, 'Affected Screens', result.screens);
+    _sectionIfPresent(buffer, 'Affected Widgets', result.widgets);
+    _sectionIfPresent(buffer, 'Suggested Tests', result.suggestedTests);
 
     if (result.isEmpty) {
       buffer
-        ..writeln('No user-facing dependents found.')
+        ..writeln('No dependents found in the graph walk.')
         ..writeln();
     }
 
@@ -39,6 +37,13 @@ class ConsoleReport {
       ..writeln('────────────────────────────────────────────');
 
     return buffer.toString();
+  }
+
+  void _sectionIfPresent(StringBuffer buffer, String title, List<String> items) {
+    if (items.isEmpty) {
+      return;
+    }
+    _section(buffer, title, items);
   }
 
   void _section(StringBuffer buffer, String title, List<String> items) {

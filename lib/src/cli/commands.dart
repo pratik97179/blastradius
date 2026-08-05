@@ -22,7 +22,7 @@ import '../report/report_renderer.dart';
 import '../utils/logger.dart';
 import 'exit_codes.dart';
 
-const String packageVersion = '0.1.2';
+const String packageVersion = '0.2.0';
 
 Future<int> runBlastRadius(List<String> args) async {
   final runner = BlastRadiusCommandRunner();
@@ -43,7 +43,7 @@ class BlastRadiusCommandRunner extends CommandRunner<int> {
       : super(
           'blastradius',
           'Know your blast radius before you commit.\n'
-              'Static impact analysis for Flutter applications.',
+              'Static impact analysis for Dart and Flutter packages.',
         ) {
     argParser.addFlag(
       'version',
@@ -54,7 +54,7 @@ class BlastRadiusCommandRunner extends CommandRunner<int> {
     argParser.addOption(
       'project',
       abbr: 'p',
-      help: 'Path to the Flutter project root (defaults to the current directory).',
+      help: 'Path to the Dart or Flutter package root (defaults to the current directory).',
       valueHelp: 'path',
     );
     argParser.addFlag(
@@ -412,7 +412,7 @@ class AnalyzeCommand extends Command<int> with GlobalOptions {
 
   @override
   String get description =>
-      'Discover a Flutter project, extract AST, classify types, and build the dependency graph.';
+      'Discover a Dart or Flutter package, extract AST, classify types, and build the dependency graph.';
 
   @override
   Future<int> run() async {
@@ -424,6 +424,7 @@ class AnalyzeCommand extends Command<int> with GlobalOptions {
     logger.info('BlastRadius $packageVersion');
     logger.info('Project   ${context.rootPath}');
     logger.info('Package   ${context.packageName}');
+    logger.info('Platform  ${context.isFlutter ? 'flutter' : 'dart'}');
     logger.info('Pubspec   ${context.pubspecPath}');
     logger.info('Dart files ${context.dartFileCount}');
     if (logger.verbose) {

@@ -1,5 +1,5 @@
 name: plain_dart_package
-description: Non-Flutter package used to assert discovery rejection.
+description: Minimal Dart package used to assert non-Flutter discovery.
 version: 0.0.1
 publish_to: none
 

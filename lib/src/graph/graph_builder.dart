@@ -132,27 +132,26 @@ class GraphBuilder {
     }
 
     for (final usage in ast.typeUsages) {
-      if (usage.fromClass == null) {
-        continue;
-      }
-      final fromClassId = _classId(usage.fromFile, usage.fromClass!);
       final toClassId = _findClassNodeId(nodes, ast, usage.targetTypeName);
-      if (toClassId == null ||
-          !nodes.containsKey(fromClassId) ||
-          fromClassId == toClassId) {
+      if (toClassId == null) {
         continue;
       }
 
-      _addEdge(
-        edges: edges,
-        seen: seenEdges,
-        edge: GraphEdge(
-          fromId: fromClassId,
-          toId: toClassId,
-          kind: EdgeKind.uses,
-          confidence: 0.9,
-        ),
-      );
+      if (usage.fromClass != null) {
+        final fromClassId = _classId(usage.fromFile, usage.fromClass!);
+        if (nodes.containsKey(fromClassId) && fromClassId != toClassId) {
+          _addEdge(
+            edges: edges,
+            seen: seenEdges,
+            edge: GraphEdge(
+              fromId: fromClassId,
+              toId: toClassId,
+              kind: EdgeKind.uses,
+              confidence: 0.9,
+            ),
+          );
+        }
+      }
 
       if (usage.fromMethod != null) {
         final fromMethodId = _methodId(
@@ -160,7 +159,7 @@ class GraphBuilder {
           usage.fromClass,
           usage.fromMethod!,
         );
-        if (nodes.containsKey(fromMethodId)) {
+        if (nodes.containsKey(fromMethodId) && fromMethodId != toClassId) {
           _addEdge(
             edges: edges,
             seen: seenEdges,

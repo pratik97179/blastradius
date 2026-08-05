@@ -3,7 +3,8 @@ import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
-  final fixture = p.join('test', 'fixtures', 'sample_flutter_app');
+  final flutterFixture = p.join('test', 'fixtures', 'sample_flutter_app');
+  final dartFixture = p.join('test', 'fixtures', 'dart_call_chain');
 
   group('runBlastRadius', () {
     test('prints version', () async {
@@ -26,24 +27,38 @@ void main() {
       expect(code, ExitCodes.usageError);
     });
 
-    test('analyze discovers the fixture project', () async {
-      final code = await runBlastRadius(['-p', fixture, 'analyze']);
+    test('analyze discovers the Flutter fixture project', () async {
+      final code = await runBlastRadius(['-p', flutterFixture, 'analyze']);
       expect(code, ExitCodes.success);
     });
 
-    test('rejects non-Flutter project roots', () async {
+    test('analyze accepts a plain Dart package', () async {
       final code = await runBlastRadius([
         '-p',
         p.join('test', 'fixtures', 'plain_dart_package'),
         'analyze',
       ]);
-      expect(code, ExitCodes.projectError);
+      expect(code, ExitCodes.success);
+    });
+
+    test('analyze and trace work on dart_call_chain', () async {
+      final analyze = await runBlastRadius(['-p', dartFixture, 'analyze']);
+      expect(analyze, ExitCodes.success);
+
+      final trace = await runBlastRadius([
+        '-p',
+        dartFixture,
+        'trace',
+        'method',
+        'getPortfolio',
+      ]);
+      expect(trace, ExitCodes.success);
     });
 
     test('trace method returns a blast radius report', () async {
       final code = await runBlastRadius([
         '-p',
-        fixture,
+        flutterFixture,
         'trace',
         'method',
         'getPortfolio',
@@ -54,7 +69,7 @@ void main() {
     test('trace unknown method fails with usage error', () async {
       final code = await runBlastRadius([
         '-p',
-        fixture,
+        flutterFixture,
         'trace',
         'method',
         'definitelyMissingMethodZz',
@@ -63,7 +78,7 @@ void main() {
     });
 
     test('diff runs against the enclosing git repository', () async {
-      final code = await runBlastRadius(['-p', fixture, 'diff']);
+      final code = await runBlastRadius(['-p', flutterFixture, 'diff']);
       expect(code, ExitCodes.success);
     });
   });

@@ -11,6 +11,7 @@ void main() {
     final context = analyzer.discover(root);
 
     expect(context.packageName, 'sample_flutter_app');
+    expect(context.isFlutter, isTrue);
     expect(context.dartFileCount, greaterThanOrEqualTo(12));
     expect(
       context.dartFiles.map((f) => p.relative(f, from: root)),
@@ -32,12 +33,22 @@ void main() {
     );
   });
 
-  test('rejects a plain Dart package', () {
+  test('discovers a plain Dart package', () {
     final root = p.join(fixtures, 'plain_dart_package');
-    expect(
-      () => analyzer.discover(root),
-      throwsA(isA<ProjectDiscoveryException>()),
-    );
+    final context = analyzer.discover(root);
+
+    expect(context.packageName, 'plain_dart_package');
+    expect(context.isFlutter, isFalse);
+    expect(context.dartFileCount, 0);
+  });
+
+  test('discovers dart_call_chain as a Dart package with sources', () {
+    final root = p.join(fixtures, 'dart_call_chain');
+    final context = analyzer.discover(root);
+
+    expect(context.packageName, 'dart_call_chain');
+    expect(context.isFlutter, isFalse);
+    expect(context.dartFileCount, greaterThanOrEqualTo(3));
   });
 
   test('rejects a missing path', () {

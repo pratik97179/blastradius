@@ -1,5 +1,5 @@
 name: dart_call_chain
-description: Plain Dart call-chain fixture for AST extraction tests.
+description: Plain Dart call-chain fixture for discovery, AST, graph, and CLI tests.
 version: 0.0.1
 publish_to: none
 
