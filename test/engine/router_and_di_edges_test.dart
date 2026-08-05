@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:blastradius/src/analyzer/analysis_pipeline.dart';
 import 'package:blastradius/src/analyzer/project_analyzer.dart';
 import 'package:blastradius/src/graph/edge.dart';
@@ -9,6 +11,13 @@ void main() {
   late AnalysisSnapshot snapshot;
 
   setUpAll(() async {
+    final deps = await Process.run(
+      'dart',
+      ['pub', 'get'],
+      workingDirectory: root,
+    );
+    expect(deps.exitCode, 0, reason: '${deps.stderr}');
+
     final context = ProjectAnalyzer().discover(root);
     snapshot = await AnalysisPipeline().run(context);
   });

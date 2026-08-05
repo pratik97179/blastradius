@@ -1,5 +1,7 @@
 # BlastRadius
 
+[![CI](https://github.com/blastradius/blastradius/actions/workflows/ci.yml/badge.svg)](https://github.com/blastradius/blastradius/actions/workflows/ci.yml)
+
 **Know your blast radius before you commit.**
 
 A CLI static analysis tool for Dart and Flutter packages. Point it at a change and see which callers, repositories, services, state managers, and screens sit in the blast radius, before review, QA, or merge.
@@ -56,7 +58,7 @@ Large codebases hide impact behind services, repositories, state managers, and r
 
 ## Status
 
-**MVP 0.2.2.** Heuristics are best-effort, not guarantees. Confidence scores are advisory.
+**MVP 0.2.3.** Heuristics are best-effort, not guarantees. Confidence scores are advisory.
 
 | Capability | State |
 |------------|--------|
@@ -67,6 +69,7 @@ Large codebases hide impact behind services, repositories, state managers, and r
 | `trace method\|file\|class` | Ready |
 | `diff` (git working tree) | Ready |
 | Console / JSON / Markdown reports | Ready |
+| GitHub Actions CI | Ready |
 
 ## Install
 

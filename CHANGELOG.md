@@ -2,6 +2,19 @@
 
 All notable changes to BlastRadius are documented in this file.
 
+## [0.2.3]
+
+### Added
+
+- GitHub Actions CI workflow: Flutter stable, fixture `pub get`,
+  `dart analyze --fatal-infos`, and `dart test` on push/PR to `main`.
+
+### Changed
+
+- Flutter fixture engine tests call `dart pub get` in `setUpAll` so parallel
+  runs do not depend on a pre-existing `.dart_tool`.
+- Package version set to `0.2.3`.
+
 ## [0.2.2]
 
 ### Changed

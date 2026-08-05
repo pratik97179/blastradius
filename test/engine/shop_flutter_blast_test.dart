@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:blastradius/src/analyzer/analysis_pipeline.dart';
 import 'package:blastradius/src/analyzer/project_analyzer.dart';
 import 'package:blastradius/src/engine/blast_radius_engine.dart';
@@ -9,6 +11,15 @@ import 'package:test/test.dart';
 
 void main() {
   final root = p.join('test', 'fixtures', 'shop_flutter_app');
+
+  setUpAll(() async {
+    final result = await Process.run(
+      'dart',
+      ['pub', 'get'],
+      workingDirectory: root,
+    );
+    expect(result.exitCode, 0, reason: '${result.stderr}');
+  });
 
   test('ChangeNotifier shop chain links pages into fetchItems blast', () async {
     final context = ProjectAnalyzer().discover(root);
