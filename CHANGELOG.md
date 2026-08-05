@@ -2,6 +2,19 @@
 
 All notable changes to BlastRadius are documented in this file.
 
+## [0.2.1]
+
+### Added
+
+- Second Flutter fixture `shop_flutter_app`: catalog domain with
+  `ChangeNotifier`, Provider consumers, and `pages/` route destinations.
+- Blast regression for `CatalogService.fetchItems` reaching catalog/cart
+  pages and suggesting `catalog_controller_test`.
+
+### Changed
+
+- Package version set to `0.2.1`.
+
 ## [0.2.0]
 
 ### Added

@@ -56,7 +56,7 @@ Large codebases hide impact behind services, repositories, state managers, and r
 
 ## Status
 
-**MVP 0.2.0.** Heuristics are best-effort, not guarantees. Confidence scores are advisory.
+**MVP 0.2.1.** Heuristics are best-effort, not guarantees. Confidence scores are advisory.
 
 | Capability | State |
 |------------|--------|
@@ -145,7 +145,7 @@ Static analysis only. No app execution. Flutter is detected from `pubspec.yaml` 
 
 `test/fixtures/dart_call_chain` is a plain Dart package (service → repository → loader).
 
-`test/fixtures/sample_flutter_app` models a Flutter blast chain:
+`test/fixtures/sample_flutter_app` is a Bloc + screens portfolio chain:
 
 ```text
 PortfolioService.getPortfolio()
@@ -155,10 +155,21 @@ PortfolioService.getPortfolio()
         → GoRouter (+ legacy MaterialPageRoute)
 ```
 
+`test/fixtures/shop_flutter_app` is a ChangeNotifier + pages catalog chain:
+
+```text
+CatalogService.fetchItems()
+  → CatalogRepository
+    → CatalogController
+      → CatalogPage / CartPage
+        → GoRouter (+ legacy MaterialPageRoute)
+```
+
 ```bash
 dart run bin/blastradius.dart -p test/fixtures/dart_call_chain analyze
 dart run bin/blastradius.dart -p test/fixtures/dart_call_chain trace method getPortfolio
 dart run bin/blastradius.dart -p test/fixtures/sample_flutter_app trace method getPortfolio
+dart run bin/blastradius.dart -p test/fixtures/shop_flutter_app trace method fetchItems
 dart run bin/blastradius.dart -p test/fixtures/sample_flutter_app trace method getPortfolio --format json
 ```
 
