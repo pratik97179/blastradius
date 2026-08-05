@@ -49,45 +49,45 @@ void main() {
     expect(graph.nodeCount, greaterThanOrEqualTo(6));
     expect(graph.edgeCount, greaterThanOrEqualTo(2));
 
-    final getPortfolio = graph.findMethod(
-      methodName: 'getPortfolio',
-      className: 'PortfolioService',
+    final fetchProfile = graph.findMethod(
+      methodName: 'fetchProfile',
+      className: 'UserService',
     );
-    expect(getPortfolio, isNotNull);
+    expect(fetchProfile, isNotNull);
 
-    final directDependents = graph.dependentsOf(getPortfolio!.id);
+    final directDependents = graph.dependentsOf(fetchProfile!.id);
     expect(
       directDependents.any((edge) {
         final from = graph.nodeById(edge.fromId);
         return edge.kind == EdgeKind.calls &&
-            from?.className == 'PortfolioRepository' &&
-            from?.name == 'fetchHoldings';
+            from?.className == 'UserRepository' &&
+            from?.name == 'loadProfile';
       }),
       isTrue,
     );
 
-    final fetchHoldings = graph.findMethod(
-      methodName: 'fetchHoldings',
-      className: 'PortfolioRepository',
+    final loadProfile = graph.findMethod(
+      methodName: 'loadProfile',
+      className: 'UserRepository',
     );
-    expect(fetchHoldings, isNotNull);
+    expect(loadProfile, isNotNull);
 
-    final loaderDependents = graph.dependentsOf(fetchHoldings!.id);
+    final loaderDependents = graph.dependentsOf(loadProfile!.id);
     expect(
       loaderDependents.any((edge) {
         final from = graph.nodeById(edge.fromId);
         return edge.kind == EdgeKind.calls &&
-            from?.className == 'PortfolioLoader' &&
+            from?.className == 'ProfileLoader' &&
             from?.name == 'load';
       }),
       isTrue,
     );
 
     final serviceClass = graph.nodes.values.firstWhere(
-      (n) => !n.isMethod && n.name == 'PortfolioService',
+      (n) => !n.isMethod && n.name == 'UserService',
     );
     final repoClass = graph.nodes.values.firstWhere(
-      (n) => !n.isMethod && n.name == 'PortfolioRepository',
+      (n) => !n.isMethod && n.name == 'UserRepository',
     );
     expect(
       graph.dependentsOf(serviceClass.id).any((e) => e.fromId == repoClass.id),

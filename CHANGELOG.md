@@ -2,6 +2,16 @@
 
 All notable changes to BlastRadius are documented in this file.
 
+## [0.2.2]
+
+### Changed
+
+- Plain Dart `dart_call_chain` fixture uses a user-profile domain
+  (`UserService.fetchProfile` -> `UserRepository` -> `ProfileLoader`) instead
+  of portfolio names.
+- AST, graph, blast, and CLI tests track the renamed Dart call chain.
+- Package version set to `0.2.2`.
+
 ## [0.2.1]
 
 ### Added

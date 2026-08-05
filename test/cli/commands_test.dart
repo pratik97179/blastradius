@@ -50,7 +50,7 @@ void main() {
         dartFixture,
         'trace',
         'method',
-        'getPortfolio',
+        'fetchProfile',
       ]);
       expect(trace, ExitCodes.success);
     });

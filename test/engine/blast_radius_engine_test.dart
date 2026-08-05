@@ -21,7 +21,7 @@ void main() {
     expect(result.exitCode, 0, reason: '${result.stderr}');
   });
 
-  test('traces getPortfolio reverse dependents through the call chain', () async {
+  test('traces fetchProfile reverse dependents through the call chain', () async {
     final lib = p.join(root, 'lib');
     final dartFiles = Directory(lib)
         .listSync(recursive: true)
@@ -41,15 +41,15 @@ void main() {
     final snapshot = await AnalysisPipeline().run(context);
     final seeds = SymbolResolver().resolveMethod(
       snapshot.graph,
-      methodName: 'getPortfolio',
+      methodName: 'fetchProfile',
     );
     final result = BlastRadiusEngine().trace(
       graph: snapshot.graph,
       seeds: seeds,
     );
 
-    expect(result.changed, contains('PortfolioService.getPortfolio'));
-    expect(result.repositories, contains('PortfolioRepository'));
+    expect(result.changed, contains('UserService.fetchProfile'));
+    expect(result.repositories, contains('UserRepository'));
     expect(result.services, isEmpty);
   });
 }

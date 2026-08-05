@@ -23,7 +23,7 @@ void main() {
     );
   });
 
-  test('extracts classes, methods, and resolved getPortfolio call', () async {
+  test('extracts classes, methods, and resolved fetchProfile call', () async {
     final lib = p.join(root, 'lib');
     final dartFiles = Directory(lib)
         .listSync(recursive: true)
@@ -45,30 +45,30 @@ void main() {
     expect(
       ast.classes.map((c) => c.name),
       containsAll([
-        'PortfolioService',
-        'PortfolioRepository',
-        'PortfolioLoader',
+        'UserService',
+        'UserRepository',
+        'ProfileLoader',
       ]),
     );
     expect(
       ast.methods.map((m) => m.qualifiedName),
       containsAll([
-        'PortfolioService.getPortfolio',
-        'PortfolioRepository.fetchHoldings',
-        'PortfolioLoader.load',
+        'UserService.fetchProfile',
+        'UserRepository.loadProfile',
+        'ProfileLoader.load',
       ]),
     );
 
-    final portfolioCalls = ast.calls.where(
-      (c) => c.targetName == 'getPortfolio' && c.isResolved,
+    final profileCalls = ast.calls.where(
+      (c) => c.targetName == 'fetchProfile' && c.isResolved,
     );
-    expect(portfolioCalls, isNotEmpty);
+    expect(profileCalls, isNotEmpty);
     expect(
-      portfolioCalls.any(
+      profileCalls.any(
         (c) =>
-            c.fromClass == 'PortfolioRepository' &&
-            c.fromMethod == 'fetchHoldings' &&
-            c.targetClass == 'PortfolioService',
+            c.fromClass == 'UserRepository' &&
+            c.fromMethod == 'loadProfile' &&
+            c.targetClass == 'UserService',
       ),
       isTrue,
     );
