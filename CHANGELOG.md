@@ -2,6 +2,20 @@
 
 All notable changes to BlastRadius are documented in this file.
 
+## [0.1.0]
+
+### Added
+
+- Full JSON blast-radius reports via `--format json` (structured affected groups,
+  risk, confidence, suggested tests).
+- Full Markdown blast-radius reports via `--format md` (checklist-style sections
+  for PR comments and reviews).
+- Shared `ReportRenderer` used by both `trace` and `diff`.
+
+### Changed
+
+- Package version set to `0.1.0` for the first MVP-complete report surface.
+
 ## [0.0.8]
 
 ### Added

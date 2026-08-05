@@ -18,11 +18,11 @@ import '../graph/node.dart';
 import '../model/blast_result.dart';
 import '../model/node_kind.dart';
 import '../model/project_context.dart';
-import '../report/console_report.dart';
+import '../report/report_renderer.dart';
 import '../utils/logger.dart';
 import 'exit_codes.dart';
 
-const String packageVersion = '0.0.8';
+const String packageVersion = '0.1.0';
 
 Future<int> runBlastRadius(List<String> args) async {
   final runner = BlastRadiusCommandRunner();
@@ -136,14 +136,7 @@ mixin GlobalOptions on Command<int> {
             .toList(growable: false),
       );
 
-      if (format == 'json') {
-        logger.info(_toJsonLite(result.changed, result.screens, result.risk.label, result.confidence));
-      } else if (format == 'md') {
-        logger.info('# BlastRadius\n');
-        logger.info(ConsoleReport().render(result));
-      } else {
-        logger.info(ConsoleReport().render(result));
-      }
+      logger.info(ReportRenderer().render(result, format));
       return ExitCodes.success;
     } on AstExtractionException catch (e) {
       logger.error(e.message);
@@ -401,21 +394,7 @@ class DiffCommand extends Command<int> with GlobalOptions {
         );
       }
 
-      if (format == 'json') {
-        logger.info(
-          _toJsonLite(
-            result.changed,
-            result.screens,
-            result.risk.label,
-            result.confidence,
-          ),
-        );
-      } else if (format == 'md') {
-        logger.info('# BlastRadius\n');
-        logger.info(ConsoleReport().render(result));
-      } else {
-        logger.info(ConsoleReport().render(result));
-      }
+      logger.info(ReportRenderer().render(result, format));
       return ExitCodes.success;
     } on GitDiffException catch (e) {
       logger.error(e.message);
@@ -491,15 +470,4 @@ class AnalyzeCommand extends Command<int> with GlobalOptions {
 
     return ExitCodes.success;
   }
-}
-
-String _toJsonLite(
-  List<String> changed,
-  List<String> screens,
-  String risk,
-  double confidence,
-) {
-  final changedJson = changed.map((e) => '"$e"').join(', ');
-  final screensJson = screens.map((e) => '"$e"').join(', ');
-  return '{"changed":[$changedJson],"screens":[$screensJson],"risk":"$risk","confidence":$confidence}';
 }

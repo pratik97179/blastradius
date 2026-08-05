@@ -4,4 +4,5 @@ paths:
   - test/graph
   - test/engine
   - test/diff
+  - test/report
   - test/fixtures/fixture_layout_test.dart

@@ -6,25 +6,41 @@ A CLI static analysis tool for Flutter apps. Point it at a change and see which 
 
 ```text
 ────────────────────────────────────────────
+
 BlastRadius
 
 Changed
-  PortfolioService.getPortfolio()
 
-Affected Screens
-  ✓ PortfolioScreen
-  ✓ DashboardScreen
-  ✓ StockDetailsScreen
+✓ PortfolioService.getPortfolio
+
+Affected Repositories
+
+✓ PortfolioRepository
 
 Affected State Managers
-  ✓ PortfolioBloc
 
-Risk        HIGH
-Confidence  91%
+✓ PortfolioBloc
+
+Affected Screens
+
+✓ PortfolioScreen
+✓ StockDetailsScreen
+
+Suggested Tests
+
+✓ portfolio_bloc_test
+✓ portfolio_screen_test
+
+Risk
+
+MEDIUM
+
+Confidence
+
+100%
+
 ────────────────────────────────────────────
 ```
-
-> Sample output. The full report pipeline is under active MVP development.
 
 ---
 
@@ -38,20 +54,17 @@ Large Flutter codebases hide impact behind services, repositories, Blocs, and ro
 
 ## Status
 
-**Early MVP, fail fast.** APIs and output will move. Heuristics are best-effort, not guarantees.
+**MVP 0.1.0.** Heuristics are best-effort, not guarantees. Confidence scores are advisory.
 
 | Capability | State |
 |------------|--------|
 | CLI command parser | Ready |
 | Project discovery | Ready |
-| Portfolio fixture chain | Ready |
-| AST extraction | Ready |
-| Class classifiers | Ready |
+| AST extraction + classifiers | Ready |
 | Dependency graph | Ready |
-| Blast radius engine / `trace` | Ready |
-| `diff` analysis | Ready |
-| Console report | Ready |
-| JSON / Markdown reports | Partial |
+| `trace method\|file\|class` | Ready |
+| `diff` (git working tree) | Ready |
+| Console / JSON / Markdown reports | Ready |
 
 ## Install
 
@@ -74,11 +87,11 @@ dart run bin/blastradius.dart
 blastradius --help
 blastradius --version
 
-# Discover and index a Flutter project
+# Discover / index / classify / graph summary
 blastradius -p path/to/flutter_app analyze
 blastradius -p path/to/flutter_app analyze -v
 
-# Trace blast radius (live)
+# Trace blast radius
 blastradius -p path/to/flutter_app trace method getPortfolio
 blastradius -p path/to/flutter_app trace file lib/services/portfolio_service.dart
 blastradius -p path/to/flutter_app trace class PortfolioRepository
@@ -86,6 +99,11 @@ blastradius -p path/to/flutter_app trace class PortfolioRepository
 # Diff blast radius for local git changes
 blastradius -p path/to/flutter_app diff
 blastradius -p path/to/flutter_app diff --base main
+
+# Formats
+blastradius -p path/to/flutter_app trace method getPortfolio --format console
+blastradius -p path/to/flutter_app trace method getPortfolio --format json
+blastradius -p path/to/flutter_app diff --format md
 ```
 
 Global flags: `--project` (`-p`), `--verbose` (`-v`), `--version` (`-V`).
@@ -98,7 +116,7 @@ Global flags: `--project` (`-p`), `--verbose` (`-v`), `--version` (`-V`).
 
 See [CHANGELOG.md](CHANGELOG.md).
 
-## Supported patterns (MVP target)
+## Supported patterns (MVP)
 
 - Repository / service layers
 - Bloc & Cubit
@@ -113,7 +131,7 @@ See [CHANGELOG.md](CHANGELOG.md).
 CLI → project index → Dart analyzer → dependency graph → blast walk → report
 ```
 
-Static analysis only. No app execution. Confidence scores are advisory.
+Static analysis only. No app execution.
 
 ## Test fixture
 
@@ -127,7 +145,10 @@ PortfolioService.getPortfolio()
         → GoRouter (+ legacy MaterialPageRoute)
 ```
 
-Use it as the `--project` target while building graph and trace behavior.
+```bash
+dart run bin/blastradius.dart -p test/fixtures/sample_flutter_app trace method getPortfolio
+dart run bin/blastradius.dart -p test/fixtures/sample_flutter_app trace method getPortfolio --format json
+```
 
 ## Contributing
 
