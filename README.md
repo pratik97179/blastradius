@@ -54,7 +54,7 @@ Large Flutter codebases hide impact behind services, repositories, Blocs, and ro
 
 ## Status
 
-**MVP 0.1.0.** Heuristics are best-effort, not guarantees. Confidence scores are advisory.
+**MVP 0.1.2.** Heuristics are best-effort, not guarantees. Confidence scores are advisory.
 
 | Capability | State |
 |------------|--------|

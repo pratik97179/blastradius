@@ -2,6 +2,40 @@
 
 All notable changes to BlastRadius are documented in this file.
 
+## [0.1.2]
+
+### Added
+
+- Type-usage extraction for state consumers (`BlocBuilder`, `BlocProvider`,
+  `Provider`, `context.read` / `watch` / `select`, and related widgets).
+- Graph `uses` edges from consumer widgets/methods to referenced bloc /
+  repository / notifier types.
+- Fixture blast regression covering `DashboardScreen` via `BlocBuilder`.
+
+### Changed
+
+- Package version set to `0.1.2`.
+
+## [0.1.1]
+
+### Added
+
+- Route destination extraction from `GoRoute`, `MaterialPageRoute`, and
+  `CupertinoPageRoute` (`builder` / `pageBuilder` / `child`).
+- Shared `KindSignals` for framework bases, route constructors, and folder
+  segments used during classification.
+
+### Changed
+
+- Node classification no longer uses class-name suffixes (`*Screen`, `*Bloc`,
+  `*Repository`, etc.).
+- Screens are inferred from router destinations and `pages` / `screens`
+  folders.
+- Bloc / Cubit / ChangeNotifier require matching framework base types.
+- Repository / service / provider kinds come from `repositories`, `services`,
+  and `providers` folder segments.
+- Package version set to `0.1.1`.
+
 ## [0.1.0]
 
 ### Added
@@ -11,16 +45,10 @@ All notable changes to BlastRadius are documented in this file.
 - Full Markdown blast-radius reports via `--format md` (checklist-style sections
   for PR comments and reviews).
 - Shared `ReportRenderer` used by both `trace` and `diff`.
-- Route destination extraction from `GoRoute`, `MaterialPageRoute`, and
-  `CupertinoPageRoute` (`builder` / `pageBuilder` / `child`).
 
 ### Changed
 
 - Package version set to `0.1.0` for the first MVP-complete report surface.
-- Node classification uses pre-defined structural signals instead of class-name
-  suffixes: framework base types (Bloc/Cubit/ChangeNotifier/Widget), router
-  destinations, and folder segments (`pages`/`screens`, `repositories`,
-  `services`, `providers`).
 
 ## [0.0.8]
 

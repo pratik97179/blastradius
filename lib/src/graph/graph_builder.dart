@@ -131,6 +131,50 @@ class GraphBuilder {
       }
     }
 
+    for (final usage in ast.typeUsages) {
+      if (usage.fromClass == null) {
+        continue;
+      }
+      final fromClassId = _classId(usage.fromFile, usage.fromClass!);
+      final toClassId = _findClassNodeId(nodes, ast, usage.targetTypeName);
+      if (toClassId == null ||
+          !nodes.containsKey(fromClassId) ||
+          fromClassId == toClassId) {
+        continue;
+      }
+
+      _addEdge(
+        edges: edges,
+        seen: seenEdges,
+        edge: GraphEdge(
+          fromId: fromClassId,
+          toId: toClassId,
+          kind: EdgeKind.uses,
+          confidence: 0.9,
+        ),
+      );
+
+      if (usage.fromMethod != null) {
+        final fromMethodId = _methodId(
+          usage.fromFile,
+          usage.fromClass,
+          usage.fromMethod!,
+        );
+        if (nodes.containsKey(fromMethodId)) {
+          _addEdge(
+            edges: edges,
+            seen: seenEdges,
+            edge: GraphEdge(
+              fromId: fromMethodId,
+              toId: toClassId,
+              kind: EdgeKind.uses,
+              confidence: 0.9,
+            ),
+          );
+        }
+      }
+    }
+
     return DependencyGraph(nodes: nodes, edges: edges);
   }
 

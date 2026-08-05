@@ -72,12 +72,27 @@ class ResolvedCall {
       targetClass == null ? targetName : '$targetClass.$targetName';
 }
 
+class TypeUsage {
+  const TypeUsage({
+    required this.fromFile,
+    required this.targetTypeName,
+    this.fromClass,
+    this.fromMethod,
+  });
+
+  final String fromFile;
+  final String? fromClass;
+  final String? fromMethod;
+  final String targetTypeName;
+}
+
 class AstModel {
   const AstModel({
     required this.classes,
     required this.methods,
     required this.calls,
     this.routeDestinationNames = const {},
+    this.typeUsages = const [],
   });
 
   final List<DeclaredClass> classes;
@@ -86,6 +101,9 @@ class AstModel {
 
   /// Widget class names constructed inside GoRoute / *PageRoute destinations.
   final Set<String> routeDestinationNames;
+
+  /// Type arguments from BlocBuilder / Provider / context.read-style usages.
+  final List<TypeUsage> typeUsages;
 
   int get resolvedCallCount => calls.where((c) => c.isResolved).length;
 }

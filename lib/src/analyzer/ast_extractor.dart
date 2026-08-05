@@ -25,6 +25,7 @@ class AstExtractor {
         methods: [],
         calls: [],
         routeDestinationNames: {},
+        typeUsages: [],
       );
     }
 
@@ -36,6 +37,7 @@ class AstExtractor {
     final methods = <DeclaredMethod>[];
     final calls = <ResolvedCall>[];
     final routeDestinationNames = <String>{};
+    final typeUsages = <TypeUsage>[];
 
     try {
       for (final filePath in context.dartFiles) {
@@ -53,6 +55,7 @@ class AstExtractor {
         methods.addAll(visitor.methods);
         calls.addAll(visitor.calls);
         routeDestinationNames.addAll(visitor.routeDestinationNames);
+        typeUsages.addAll(visitor.typeUsages);
       }
     } finally {
       await collection.dispose();
@@ -65,6 +68,7 @@ class AstExtractor {
       methods: methods,
       calls: calls,
       routeDestinationNames: routeDestinationNames,
+      typeUsages: typeUsages,
     );
   }
 }
@@ -77,6 +81,7 @@ class _ExtractionVisitor extends RecursiveAstVisitor<void> {
   final List<DeclaredMethod> methods = [];
   final List<ResolvedCall> calls = [];
   final Set<String> routeDestinationNames = {};
+  final List<TypeUsage> typeUsages = [];
 
   String? _currentClass;
   String? _currentMethod;
@@ -161,7 +166,18 @@ class _ExtractionVisitor extends RecursiveAstVisitor<void> {
       targetName: node.methodName.name,
       element: node.methodName.element,
     );
+    if (KindSignals.stateLookupMethods.contains(node.methodName.name)) {
+      _recordTypeArguments(node.typeArguments);
+    }
     super.visitMethodInvocation(node);
+  }
+
+  @override
+  void visitNamedType(NamedType node) {
+    if (_currentClass != null && _isTypeArgOfStateConsumer(node)) {
+      _recordTypeUsage(node.name.lexeme);
+    }
+    super.visitNamedType(node);
   }
 
   @override
@@ -195,6 +211,46 @@ class _ExtractionVisitor extends RecursiveAstVisitor<void> {
       }
       arg.expression.accept(collector);
     }
+  }
+
+  bool _isTypeArgOfStateConsumer(NamedType node) {
+    final parent = node.parent;
+    if (parent is! TypeArgumentList) {
+      return false;
+    }
+    final owner = parent.parent;
+    if (owner is NamedType) {
+      return KindSignals.stateConsumerTypes.contains(owner.name.lexeme);
+    }
+    return false;
+  }
+
+  void _recordTypeArguments(TypeArgumentList? typeArguments) {
+    if (typeArguments == null || _currentClass == null) {
+      return;
+    }
+    for (final arg in typeArguments.arguments) {
+      if (arg is NamedType) {
+        _recordTypeUsage(arg.name.lexeme);
+      }
+    }
+  }
+
+  void _recordTypeUsage(String targetTypeName) {
+    if (targetTypeName.isEmpty || _currentClass == null) {
+      return;
+    }
+    if (targetTypeName == _currentClass) {
+      return;
+    }
+    typeUsages.add(
+      TypeUsage(
+        fromFile: filePath,
+        fromClass: _currentClass,
+        fromMethod: _currentMethod,
+        targetTypeName: targetTypeName,
+      ),
+    );
   }
 
   void _recordCall({

@@ -22,7 +22,7 @@ import '../report/report_renderer.dart';
 import '../utils/logger.dart';
 import 'exit_codes.dart';
 
-const String packageVersion = '0.1.0';
+const String packageVersion = '0.1.2';
 
 Future<int> runBlastRadius(List<String> args) async {
   final runner = BlastRadiusCommandRunner();

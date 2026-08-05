@@ -34,4 +34,26 @@ class KindSignals {
   static const Set<String> repositoryFolders = {'repositories', 'repository'};
   static const Set<String> serviceFolders = {'services', 'service'};
   static const Set<String> providerFolders = {'providers', 'provider'};
+
+  /// Widgets whose type arguments reference consumed state / data types.
+  static const Set<String> stateConsumerTypes = {
+    'BlocBuilder',
+    'BlocProvider',
+    'BlocListener',
+    'BlocConsumer',
+    'BlocSelector',
+    'RepositoryProvider',
+    'Provider',
+    'Consumer',
+    'ChangeNotifierProvider',
+    'ListenableProvider',
+    'ValueListenableBuilder',
+  };
+
+  /// Extension-style lookups that carry a consumed type argument.
+  static const Set<String> stateLookupMethods = {
+    'read',
+    'watch',
+    'select',
+  };
 }
