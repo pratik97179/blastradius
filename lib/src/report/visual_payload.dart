@@ -27,6 +27,7 @@ class VisualPayload {
     required BlastTrace trace,
     required String command,
     DateTime? generatedAt,
+    bool compact = true,
   }) {
     final nodeIds = trace.scoresByNodeId.keys.toSet();
     if (nodeIds.isEmpty) {
@@ -37,10 +38,11 @@ class VisualPayload {
         summary: trace.result,
         nodes: const [],
         edges: const [],
+        compact: compact,
       );
     }
 
-    final nodes = <Map<String, Object?>>[];
+    var nodes = <Map<String, Object?>>[];
     for (final id in nodeIds) {
       final node = graph.nodeById(id);
       if (node == null) {
@@ -58,15 +60,28 @@ class VisualPayload {
         ),
       );
     }
-    nodes.sort((a, b) => (a['id'] as String).compareTo(b['id'] as String));
 
-    final edges = <Map<String, Object?>>[];
+    var edges = <Map<String, Object?>>[];
     for (final edge in graph.edges) {
       if (!nodeIds.contains(edge.fromId) || !nodeIds.contains(edge.toId)) {
         continue;
       }
       edges.add(_edgeJson(edge));
     }
+
+    if (compact) {
+      final compacted = _compactGraph(
+        graph: graph,
+        projectRoot: context.rootPath,
+        seedIds: trace.seedIds,
+        scoresByNodeId: trace.scoresByNodeId,
+        candidateNodeIds: nodeIds,
+      );
+      nodes = compacted.nodes;
+      edges = compacted.edges;
+    }
+
+    nodes.sort((a, b) => (a['id'] as String).compareTo(b['id'] as String));
     edges.sort((a, b) {
       final from = (a['from'] as String).compareTo(b['from'] as String);
       if (from != 0) {
@@ -82,6 +97,7 @@ class VisualPayload {
       summary: trace.result,
       nodes: nodes,
       edges: edges,
+      compact: compact,
     );
   }
 
@@ -90,8 +106,9 @@ class VisualPayload {
     required DependencyGraph graph,
     required String command,
     DateTime? generatedAt,
+    bool compact = true,
   }) {
-    final nodes = graph.nodes.values
+    var nodes = graph.nodes.values
         .map(
           (node) => _nodeJson(
             node: node,
@@ -100,17 +117,31 @@ class VisualPayload {
             score: null,
           ),
         )
-        .toList()
-      ..sort((a, b) => (a['id'] as String).compareTo(b['id'] as String));
+        .toList();
 
-    final edges = graph.edges.map(_edgeJson).toList()
-      ..sort((a, b) {
-        final from = (a['from'] as String).compareTo(b['from'] as String);
-        if (from != 0) {
-          return from;
-        }
-        return (a['to'] as String).compareTo(b['to'] as String);
-      });
+    var edges = graph.edges.map(_edgeJson).toList();
+
+    if (compact) {
+      final compacted = _compactGraph(
+        graph: graph,
+        projectRoot: context.rootPath,
+        seedIds: const {},
+        scoresByNodeId: const {},
+        candidateNodeIds: graph.nodes.keys.toSet(),
+        defaultRole: VisualNodeRole.context,
+      );
+      nodes = compacted.nodes;
+      edges = compacted.edges;
+    }
+
+    nodes.sort((a, b) => (a['id'] as String).compareTo(b['id'] as String));
+    edges.sort((a, b) {
+      final from = (a['from'] as String).compareTo(b['from'] as String);
+      if (from != 0) {
+        return from;
+      }
+      return (a['to'] as String).compareTo(b['to'] as String);
+    });
 
     return VisualPayload._build(
       context: context,
@@ -129,6 +160,7 @@ class VisualPayload {
       ),
       nodes: nodes,
       edges: edges,
+      compact: compact,
     );
   }
 
@@ -139,6 +171,7 @@ class VisualPayload {
     required BlastResult summary,
     required List<Map<String, Object?>> nodes,
     required List<Map<String, Object?>> edges,
+    required bool compact,
   }) {
     final at = generatedAt ?? DateTime.now().toUtc();
     return VisualPayload({
@@ -148,6 +181,7 @@ class VisualPayload {
         'platform': context.isFlutter ? 'flutter' : 'dart',
         'command': command,
         'generatedAt': at.toIso8601String(),
+        'compact': compact,
       },
       'summary': _summaryJson(summary),
       'graph': <String, Object?>{
@@ -158,6 +192,155 @@ class VisualPayload {
   }
 
   String toJson() => const JsonEncoder.withIndent('  ').convert(data);
+
+  /// Collapse non-seed methods into class nodes and drop extends/implements.
+  static ({
+    List<Map<String, Object?>> nodes,
+    List<Map<String, Object?>> edges,
+  }) _compactGraph({
+    required DependencyGraph graph,
+    required String projectRoot,
+    required Set<String> seedIds,
+    required Map<String, double> scoresByNodeId,
+    required Set<String> candidateNodeIds,
+    VisualNodeRole defaultRole = VisualNodeRole.affected,
+  }) {
+    final classByName = <String, GraphNode>{};
+    for (final node in graph.nodes.values) {
+      if (!node.isMethod) {
+        classByName[node.name] = node;
+      }
+    }
+
+    GraphNode? classFor(GraphNode node) {
+      if (!node.isMethod || node.className == null) {
+        return null;
+      }
+      return classByName[node.className!];
+    }
+
+    final keep = <String, GraphNode>{};
+    for (final id in candidateNodeIds) {
+      final node = graph.nodeById(id);
+      if (node == null) {
+        continue;
+      }
+      if (seedIds.contains(id)) {
+        keep[id] = node;
+        continue;
+      }
+      if (node.isMethod) {
+        final cls = classFor(node);
+        if (cls != null && candidateNodeIds.contains(cls.id)) {
+          keep[cls.id] = cls;
+        } else if (cls != null) {
+          // Class may sit outside walk scores but still anchors the method.
+          keep[cls.id] = cls;
+        }
+        continue;
+      }
+      keep[id] = node;
+    }
+
+    for (final node in [...keep.values]) {
+      if (!node.isMethod || node.className == null) {
+        continue;
+      }
+      final cls = classByName[node.className!];
+      if (cls != null) {
+        keep.putIfAbsent(cls.id, () => cls);
+      }
+    }
+
+    String? resolve(String id) {
+      if (keep.containsKey(id)) {
+        return id;
+      }
+      final node = graph.nodeById(id);
+      if (node == null) {
+        return null;
+      }
+      final cls = classFor(node);
+      if (cls != null && keep.containsKey(cls.id)) {
+        return cls.id;
+      }
+      return null;
+    }
+
+    VisualNodeRole roleFor(GraphNode node) {
+      if (seedIds.contains(node.id)) {
+        return VisualNodeRole.seed;
+      }
+      if (defaultRole == VisualNodeRole.context) {
+        return VisualNodeRole.context;
+      }
+      return VisualNodeRole.affected;
+    }
+
+    double? scoreFor(String id) {
+      final direct = scoresByNodeId[id];
+      if (direct != null) {
+        return direct;
+      }
+      // Class score = best score among collapsed methods in the walk.
+      final node = keep[id];
+      if (node == null || node.isMethod) {
+        return null;
+      }
+      var best = 0.0;
+      var found = false;
+      for (final entry in scoresByNodeId.entries) {
+        final method = graph.nodeById(entry.key);
+        if (method == null || !method.isMethod) {
+          continue;
+        }
+        if (method.className == node.name) {
+          found = true;
+          if (entry.value > best) {
+            best = entry.value;
+          }
+        }
+      }
+      return found ? best : null;
+    }
+
+    final nodes = keep.values
+        .map(
+          (node) => _nodeJson(
+            node: node,
+            projectRoot: projectRoot,
+            role: roleFor(node),
+            score: scoreFor(node.id),
+          ),
+        )
+        .toList();
+
+    final edgeKeys = <String>{};
+    final edges = <Map<String, Object?>>[];
+    for (final edge in graph.edges) {
+      if (edge.kind == EdgeKind.extendsType ||
+          edge.kind == EdgeKind.implementsType) {
+        continue;
+      }
+      final from = resolve(edge.fromId);
+      final to = resolve(edge.toId);
+      if (from == null || to == null || from == to) {
+        continue;
+      }
+      final key = '$from|$to|${edge.kind.name}';
+      if (!edgeKeys.add(key)) {
+        continue;
+      }
+      edges.add({
+        'from': from,
+        'to': to,
+        'kind': edge.kind.name,
+        'confidence': double.parse(edge.confidence.toStringAsFixed(4)),
+      });
+    }
+
+    return (nodes: nodes, edges: edges);
+  }
 
   static Map<String, Object?> _summaryJson(BlastResult result) {
     return {

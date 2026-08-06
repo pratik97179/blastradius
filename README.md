@@ -58,7 +58,7 @@ Large codebases hide impact behind services, repositories, state managers, and r
 
 ## Status
 
-**MVP 0.3.0.** Heuristics are best-effort, not guarantees. Confidence scores are advisory.
+**MVP 0.3.1.** Heuristics are best-effort, not guarantees. Confidence scores are advisory.
 
 | Capability | State |
 |------------|--------|
@@ -117,6 +117,7 @@ blastradius -p path/to/package view graph
 blastradius -p path/to/package view diff
 blastradius -p path/to/package view method fetchProfile --export ./blast-view
 blastradius -p path/to/package view method fetchProfile --port 7423 --no-open
+blastradius -p path/to/package view method fetchProfile --full-graph
 ```
 
 Global flags: `--project` (`-p`), `--verbose` (`-v`), `--version` (`-V`).
@@ -146,7 +147,7 @@ On plain Dart packages, folder and call-graph signals still apply; Flutter-only 
 
 ## Visual dashboard
 
-`view` builds a graph payload and serves the React dashboard from `web/dashboard/dist` (no Node required at runtime).
+`view` builds a graph payload and serves the React dashboard from `web/dashboard/dist` (no Node required at runtime). Graphs are class-compacted by default; pass `--full-graph` for every method node.
 
 ```bash
 dart run bin/blastradius.dart -p test/fixtures/dart_call_chain view method fetchProfile

@@ -2,6 +2,19 @@
 
 All notable changes to BlastRadius are documented in this file.
 
+## [0.3.1]
+
+### Added
+
+- Compact visual graphs by default: non-seed methods collapse into class
+  nodes and extends/implements edges are omitted from the payload.
+- `view --full-graph` keeps the uncompacted method-level graph.
+
+### Changed
+
+- Dashboard payload `meta.compact` reports whether compaction ran.
+- Package version set to `0.3.1`.
+
 ## [0.3.0]
 
 ### Added

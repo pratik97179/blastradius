@@ -38,6 +38,7 @@ void main() {
       expect(decoded['meta']['packageName'], 'dart_call_chain');
       expect(decoded['meta']['platform'], 'dart');
       expect(decoded['meta']['command'], 'trace');
+      expect(decoded['meta']['compact'], isTrue);
       expect(decoded['summary']['changed'], contains('UserService.fetchProfile'));
 
       final nodes = (decoded['graph']['nodes'] as List).cast<Map<String, dynamic>>();
@@ -50,6 +51,60 @@ void main() {
 
       final edges = decoded['graph']['edges'] as List;
       expect(edges, isNotEmpty);
+    });
+
+    test('compact collapses non-seed methods into classes', () async {
+      final root = p.join('test', 'fixtures', 'shop_flutter_app');
+      await _pubGet(root);
+      final context = ProjectAnalyzer().discover(root);
+      final snapshot = await AnalysisPipeline().run(context);
+      final seeds = SymbolResolver().resolveMethod(
+        snapshot.graph,
+        methodName: 'fetchItems',
+      );
+      final trace = BlastRadiusEngine().trace(
+        graph: snapshot.graph,
+        seeds: seeds,
+      );
+
+      final full = VisualPayload.fromTrace(
+        context: context,
+        graph: snapshot.graph,
+        trace: trace,
+        command: 'trace',
+        compact: false,
+      );
+      final compact = VisualPayload.fromTrace(
+        context: context,
+        graph: snapshot.graph,
+        trace: trace,
+        command: 'trace',
+      );
+
+      final fullNodes = (jsonDecode(full.toJson())['graph']['nodes'] as List)
+          .cast<Map<String, dynamic>>();
+      final compactNodes =
+          (jsonDecode(compact.toJson())['graph']['nodes'] as List)
+              .cast<Map<String, dynamic>>();
+
+      expect(compactNodes.length, lessThan(fullNodes.length));
+      expect(
+        compactNodes.where((n) => n['isMethod'] == true).length,
+        1,
+        reason: 'only the seed method should remain',
+      );
+      expect(
+        compactNodes.any((n) => n['label'] == 'CatalogService.fetchItems'),
+        isTrue,
+      );
+      expect(compactNodes.any((n) => n['label'] == 'CatalogPage'), isTrue);
+      expect(compactNodes.any((n) => n['label'] == 'CartPage'), isTrue);
+
+      final edgeKinds = (jsonDecode(compact.toJson())['graph']['edges'] as List)
+          .map((e) => (e as Map<String, dynamic>)['kind'])
+          .toSet();
+      expect(edgeKinds.contains('extendsType'), isFalse);
+      expect(edgeKinds.contains('implementsType'), isFalse);
     });
 
     test('fromTrace highlights shop pages for fetchItems', () async {
@@ -83,7 +138,7 @@ void main() {
       expect(decoded['summary']['affected']['screens'], contains('CatalogPage'));
     });
 
-    test('fromFullGraph includes every node as context', () async {
+    test('fromFullGraph includes every node when compact is false', () async {
       final root = p.join('test', 'fixtures', 'dart_call_chain');
       await _pubGet(root);
       final context = ProjectAnalyzer().discover(root);
@@ -93,10 +148,12 @@ void main() {
         context: context,
         graph: snapshot.graph,
         command: 'analyze',
+        compact: false,
       );
       final decoded = jsonDecode(payload.toJson()) as Map<String, dynamic>;
       final nodes = (decoded['graph']['nodes'] as List).cast<Map<String, dynamic>>();
 
+      expect(decoded['meta']['compact'], isFalse);
       expect(nodes.length, snapshot.graph.nodeCount);
       expect(nodes.every((n) => n['role'] == 'context'), isTrue);
       expect(decoded['graph']['edges'], hasLength(snapshot.graph.edgeCount));

@@ -40,6 +40,11 @@ void addDashboardOptions(ArgParser parser) {
     help: 'Write an offline dashboard folder instead of serving.',
     valueHelp: 'dir',
   );
+  parser.addFlag(
+    'full-graph',
+    negatable: false,
+    help: 'Include every method node (skip class-collapse compaction).',
+  );
 }
 
 class ViewCommand extends Command<int> {
@@ -272,6 +277,7 @@ class ViewDiffCommand extends Command<int> with GlobalOptions {
         graph: snapshot.graph,
         trace: blastTrace,
         command: 'diff',
+        compact: launcher.compactGraph,
       );
       return launcher.deliver(payload);
     } on GitDiffException catch (e) {
@@ -313,6 +319,7 @@ class ViewGraphCommand extends Command<int> with GlobalOptions {
         context: context,
         graph: snapshot.graph,
         command: 'analyze',
+        compact: launcher.compactGraph,
       );
       return launcher.deliver(payload);
     } on AstExtractionException catch (e) {
@@ -329,6 +336,8 @@ class ViewLauncher {
   ViewLauncher(this.command);
 
   final Command<int> command;
+
+  bool get compactGraph => command.argResults?['full-graph'] != true;
 
   Future<int> runTraceView({
     required ProjectContext context,
@@ -350,6 +359,7 @@ class ViewLauncher {
         graph: snapshot.graph,
         trace: trace,
         command: 'trace',
+        compact: compactGraph,
       );
       return deliver(payload);
     } on AstExtractionException catch (e) {
