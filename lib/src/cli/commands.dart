@@ -17,7 +17,7 @@ import 'exit_codes.dart';
 import 'global_options.dart';
 import 'view_commands.dart';
 
-const String packageVersion = '0.3.2';
+const String packageVersion = '0.3.3';
 
 Future<int> runBlastRadius(List<String> args) async {
   final runner = BlastRadiusCommandRunner();

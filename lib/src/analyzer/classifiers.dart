@@ -51,6 +51,9 @@ class ClassClassifier {
     if (_matchesAny(hierarchy, KindSignals.changeNotifierBases)) {
       return NodeKind.changeNotifier;
     }
+    if (_matchesAny(hierarchy, KindSignals.notifierBases)) {
+      return NodeKind.provider;
+    }
 
     final isWidget = _matchesAny(hierarchy, KindSignals.widgetBases);
     if (isWidget &&

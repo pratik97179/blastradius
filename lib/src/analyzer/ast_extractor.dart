@@ -3,6 +3,7 @@ import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/type.dart';
 
 import '../model/ast_model.dart';
 import '../model/project_context.dart';
@@ -201,6 +202,7 @@ class _ExtractionVisitor extends RecursiveAstVisitor<void> {
     );
     if (KindSignals.stateLookupMethods.contains(node.methodName.name)) {
       _recordTypeArguments(node.typeArguments);
+      _recordRiverpodProviderUsages(node.argumentList);
     }
     super.visitMethodInvocation(node);
   }
@@ -273,6 +275,89 @@ class _ExtractionVisitor extends RecursiveAstVisitor<void> {
         _recordTypeUsage(arg.name.lexeme);
       }
     }
+  }
+
+  /// Resolves `ref.watch(catalogProvider)` / `.notifier` to provider type args.
+  void _recordRiverpodProviderUsages(ArgumentList argumentList) {
+    if (argumentList.arguments.isEmpty) {
+      return;
+    }
+    final element = _providerElement(argumentList.arguments.first);
+    if (element == null) {
+      return;
+    }
+
+    final type = _dartTypeOf(element);
+    if (type is! InterfaceType) {
+      return;
+    }
+    if (!_isRiverpodProviderType(type)) {
+      return;
+    }
+
+    for (final arg in type.typeArguments) {
+      if (arg is InterfaceType) {
+        final argName = arg.element.name;
+        if (argName != null && argName.isNotEmpty) {
+          _recordTypeUsage(argName);
+        }
+      }
+    }
+  }
+
+  bool _isRiverpodProviderType(InterfaceType type) {
+    if (_looksLikeRiverpodProviderName(type.element.name) &&
+        type.typeArguments.isNotEmpty) {
+      return true;
+    }
+    for (final superType in type.allSupertypes) {
+      if (_looksLikeRiverpodProviderName(superType.element.name) &&
+          (type.typeArguments.isNotEmpty ||
+              superType.typeArguments.isNotEmpty)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool _looksLikeRiverpodProviderName(String? name) {
+    if (name == null || name.isEmpty) {
+      return false;
+    }
+    if (KindSignals.riverpodProviderTypes.contains(name)) {
+      return true;
+    }
+    // Riverpod runtime types are often `FooProviderImpl` / `FooProviderBase`.
+    return name.endsWith('ProviderImpl') || name.endsWith('ProviderBase');
+  }
+
+  Element? _providerElement(Expression expression) {
+    if (expression is SimpleIdentifier) {
+      return expression.element;
+    }
+    if (expression is PrefixedIdentifier) {
+      return expression.identifier.element;
+    }
+    if (expression is PropertyAccess) {
+      final target = expression.target;
+      if (target is SimpleIdentifier) {
+        return target.element;
+      }
+      if (target is PrefixedIdentifier) {
+        return target.identifier.element;
+      }
+    }
+    return null;
+  }
+
+  DartType? _dartTypeOf(Element element) {
+    if (element is VariableElement) {
+      return element.type;
+    }
+    if (element is PropertyAccessorElement) {
+      return element.returnType;
+    }
+    return null;
   }
 
   void _recordTypeUsage(String targetTypeName) {

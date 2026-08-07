@@ -95,4 +95,51 @@ void main() {
     expect(router, contains('GoRouter'));
     expect(router, contains('MaterialPageRoute'));
   });
+
+  test('riverpod shop fixture keeps a Notifier pages chain on disk', () {
+    final root = p.join('test', 'fixtures', 'riverpod_shop_app');
+    final requiredPaths = [
+      'lib/services/catalog_service.dart',
+      'lib/repositories/catalog_repository.dart',
+      'lib/providers/catalog_notifier.dart',
+      'lib/pages/catalog_page.dart',
+      'lib/pages/cart_page.dart',
+      'lib/router/app_router.dart',
+      'test/catalog_notifier_test.dart',
+    ];
+
+    for (final relative in requiredPaths) {
+      expect(
+        File(p.join(root, relative)).existsSync(),
+        isTrue,
+        reason: 'missing $relative',
+      );
+    }
+
+    final service = File(p.join(root, 'lib/services/catalog_service.dart'))
+        .readAsStringSync();
+    expect(service, contains('fetchItems'));
+
+    final notifier =
+        File(p.join(root, 'lib/providers/catalog_notifier.dart'))
+            .readAsStringSync();
+    expect(notifier, contains('Notifier'));
+    expect(notifier, contains('CatalogRepository'));
+    expect(notifier, contains('NotifierProvider'));
+
+    final catalogPage =
+        File(p.join(root, 'lib/pages/catalog_page.dart')).readAsStringSync();
+    expect(catalogPage, contains('ConsumerWidget'));
+    expect(catalogPage, contains('ref.watch(catalogProvider)'));
+
+    final cartPage =
+        File(p.join(root, 'lib/pages/cart_page.dart')).readAsStringSync();
+    expect(cartPage, contains('ref.watch(catalogProvider)'));
+
+    final router =
+        File(p.join(root, 'lib/router/app_router.dart')).readAsStringSync();
+    expect(router, contains('CatalogPage'));
+    expect(router, contains('CartPage'));
+    expect(router, contains('GoRouter'));
+  });
 }

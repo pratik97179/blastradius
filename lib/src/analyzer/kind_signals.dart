@@ -11,10 +11,22 @@ class KindSignals {
   static const Set<String> cubitBases = {'Cubit'};
   static const Set<String> blocBases = {'Bloc'};
   static const Set<String> changeNotifierBases = {'ChangeNotifier'};
+  static const Set<String> notifierBases = {
+    'Notifier',
+    'AsyncNotifier',
+    'StreamNotifier',
+    'FamilyNotifier',
+    'FamilyAsyncNotifier',
+    'FamilyStreamNotifier',
+    'StateNotifier',
+  };
   static const Set<String> widgetBases = {
     'StatelessWidget',
     'StatefulWidget',
     'Widget',
+    'ConsumerWidget',
+    'ConsumerStatefulWidget',
+    'HookConsumerWidget',
   };
 
   /// Node kinds treated as state managers in blast summaries.
@@ -58,12 +70,38 @@ class KindSignals {
     'ChangeNotifierProvider',
     'ListenableProvider',
     'ValueListenableBuilder',
+    'NotifierProvider',
+    'AsyncNotifierProvider',
+    'StreamNotifierProvider',
+    'StateNotifierProvider',
+    'FutureProvider',
+    'StreamProvider',
+    'StateProvider',
   };
 
-  /// Extension-style lookups that carry a consumed type argument.
+  /// Provider container type names used by `ref.watch(provider)` resolution.
+  ///
+  /// Runtime types often end with `ProviderImpl` / `ProviderBase` and are
+  /// matched by suffix in the extractor as well.
+  static const Set<String> riverpodProviderTypes = {
+    'Provider',
+    'FutureProvider',
+    'StreamProvider',
+    'StateProvider',
+    'StateNotifierProvider',
+    'NotifierProvider',
+    'AsyncNotifierProvider',
+    'StreamNotifierProvider',
+    'NotifierProviderBase',
+    'AsyncNotifierProviderBase',
+    'StreamNotifierProviderBase',
+  };
+
+  /// Extension-style lookups that carry a consumed type argument or provider.
   static const Set<String> stateLookupMethods = {
     'read',
     'watch',
     'select',
+    'listen',
   };
 }

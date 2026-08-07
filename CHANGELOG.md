@@ -2,6 +2,22 @@
 
 All notable changes to BlastRadius are documented in this file.
 
+## [0.3.3]
+
+### Added
+
+- Riverpod KindSignals: `Notifier` / `AsyncNotifier` / `StreamNotifier`
+  family bases classify as provider state managers.
+- `ConsumerWidget` / `ConsumerStatefulWidget` / `HookConsumerWidget` count as
+  widget bases for screen folder and route classification.
+- AST extraction resolves `ref.watch` / `read` / `listen` provider arguments to
+  provider type arguments (for example `NotifierProvider<CatalogNotifier, T>`).
+- `riverpod_shop_app` fixture covering Service → Repository → Notifier → pages.
+
+### Changed
+
+- Package version set to `0.3.3`.
+
 ## [0.3.2]
 
 ### Changed

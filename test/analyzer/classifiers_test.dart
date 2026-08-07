@@ -152,6 +152,29 @@ void main() {
     );
   });
 
+  test('classifies Riverpod Notifier and ConsumerWidget screens', () {
+    expect(
+      classifier.classify(
+        clazz(
+          name: 'CatalogNotifier',
+          filePath: 'lib/providers/catalog_notifier.dart',
+          superclassName: 'Notifier<List<String>>',
+        ),
+      ),
+      NodeKind.provider,
+    );
+    expect(
+      classifier.classify(
+        clazz(
+          name: 'CatalogPage',
+          filePath: 'lib/pages/catalog_page.dart',
+          superclassName: 'ConsumerWidget',
+        ),
+      ),
+      NodeKind.screen,
+    );
+  });
+
   test('counts classified kinds', () {
     final classified = classifier.classifyAll(
       [

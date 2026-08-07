@@ -58,13 +58,14 @@ Large codebases hide impact behind services, repositories, state managers, and r
 
 ## Status
 
-**MVP 0.3.2.** Heuristics are best-effort, not guarantees. Confidence scores are advisory.
+**MVP 0.3.3.** Heuristics are best-effort, not guarantees. Confidence scores are advisory.
 
 | Capability | State |
 |------------|--------|
 | CLI command parser | Ready |
 | Project discovery (Dart + Flutter) | Ready |
 | AST extraction + classifiers | Ready |
+| Bloc / ChangeNotifier / Riverpod signals | Ready |
 | Dependency graph | Ready |
 | `trace method\|file\|class` | Ready |
 | `diff` (git working tree) | Ready |
