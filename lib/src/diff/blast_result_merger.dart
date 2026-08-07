@@ -1,21 +1,13 @@
 import '../model/blast_result.dart';
 
 class BlastResultMerger {
-  BlastResult merge(Iterable<BlastResult> results, {List<String> changedFiles = const []}) {
+  BlastResult merge(
+    Iterable<BlastResult> results, {
+    List<String> changedFiles = const [],
+  }) {
     final list = results.toList(growable: false);
     if (list.isEmpty) {
-      return BlastResult(
-        changed: const [],
-        changedFiles: changedFiles,
-        repositories: const [],
-        stateManagers: const [],
-        screens: const [],
-        widgets: const [],
-        services: const [],
-        suggestedTests: const [],
-        risk: RiskLevel.low,
-        confidence: 0.4,
-      );
+      return BlastResult.empty.withChangedFiles(changedFiles);
     }
 
     List<String> union(Iterable<List<String>> values) {

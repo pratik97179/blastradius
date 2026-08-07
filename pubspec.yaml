@@ -1,6 +1,6 @@
 name: blastradius
 description: Know your blast radius before you commit. Static impact analysis for Dart and Flutter packages.
-version: 0.3.1
+version: 0.3.2
 repository: https://github.com/blastradius/blastradius
 
 environment:

@@ -33,6 +33,26 @@ void main() {
     }
   });
 
+  test('exportDashboard rejects empty and escaping paths', () async {
+    final dist = PackagePaths.dashboardDist();
+    expect(
+      () => exportDashboard(
+        distDir: dist,
+        payloadJson: '{}',
+        exportPath: '   ',
+      ),
+      throwsA(isA<ArgumentError>()),
+    );
+    expect(
+      () => exportDashboard(
+        distDir: dist,
+        payloadJson: '{}',
+        exportPath: p.join('..', 'escape-blastradius-export'),
+      ),
+      throwsA(isA<ArgumentError>()),
+    );
+  });
+
   test('exportDashboard writes payload.js and index injection', () async {
     final dist = PackagePaths.dashboardDist();
     final out = Directory.systemTemp.createTempSync('blastradius-export-');

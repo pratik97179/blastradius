@@ -127,7 +127,11 @@ export function buildDisplayGraph(
   const edgeKeys = new Set<string>();
   const edges: DisplayEdge[] = [];
   for (const edge of payload.graph.edges) {
-    if (edge.kind === 'extendsType' || edge.kind === 'implementsType') {
+    if (
+      edge.kind === 'extendsType' ||
+      edge.kind === 'implementsType' ||
+      edge.kind === 'mixinType'
+    ) {
       continue;
     }
     const from = resolve(edge.from);

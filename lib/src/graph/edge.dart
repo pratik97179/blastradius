@@ -3,6 +3,7 @@ enum EdgeKind {
   uses,
   extendsType,
   implementsType,
+  mixinType,
 }
 
 class GraphEdge {

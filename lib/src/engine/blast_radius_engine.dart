@@ -1,3 +1,4 @@
+import '../analyzer/kind_signals.dart';
 import '../graph/graph.dart';
 import '../graph/node.dart';
 import '../model/blast_result.dart';
@@ -11,13 +12,6 @@ class BlastRadiusEngine {
 
   final ConfidenceEngine _confidence;
 
-  static const _stateManagerKinds = {
-    NodeKind.bloc,
-    NodeKind.cubit,
-    NodeKind.changeNotifier,
-    NodeKind.provider,
-  };
-
   BlastTrace trace({
     required DependencyGraph graph,
     required List<GraphNode> seeds,
@@ -25,17 +19,7 @@ class BlastRadiusEngine {
   }) {
     if (seeds.isEmpty) {
       return const BlastTrace(
-        result: BlastResult(
-          changed: [],
-          repositories: [],
-          stateManagers: [],
-          screens: [],
-          widgets: [],
-          services: [],
-          suggestedTests: [],
-          risk: RiskLevel.low,
-          confidence: 0.0,
-        ),
+        result: BlastResult.empty,
         seedIds: {},
         scoresByNodeId: {},
       );
@@ -88,7 +72,9 @@ class BlastRadiusEngine {
     final repositories = _names(affected, NodeKind.repository);
     final services = _names(affected, NodeKind.service);
     final stateManagers = affected
-        .where((n) => !n.isMethod && _stateManagerKinds.contains(n.kind))
+        .where(
+          (n) => !n.isMethod && KindSignals.stateManagerKinds.contains(n.kind),
+        )
         .map((n) => n.displayName)
         .toSet()
         .toList()
@@ -143,7 +129,7 @@ class BlastRadiusEngine {
     }
     return node.kind == NodeKind.screen ||
         node.kind == NodeKind.repository ||
-        _stateManagerKinds.contains(node.kind);
+        KindSignals.stateManagerKinds.contains(node.kind);
   }
 
   List<String> _names(List<GraphNode> nodes, NodeKind kind) {

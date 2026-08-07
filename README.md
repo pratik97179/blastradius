@@ -58,7 +58,7 @@ Large codebases hide impact behind services, repositories, state managers, and r
 
 ## Status
 
-**MVP 0.3.1.** Heuristics are best-effort, not guarantees. Confidence scores are advisory.
+**MVP 0.3.2.** Heuristics are best-effort, not guarantees. Confidence scores are advisory.
 
 | Capability | State |
 |------------|--------|

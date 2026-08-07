@@ -6,6 +6,7 @@ import 'package:analyzer/dart/element/element.dart';
 
 import '../model/ast_model.dart';
 import '../model/project_context.dart';
+import '../utils/logger.dart';
 import 'kind_signals.dart';
 
 class AstExtractionException implements Exception {
@@ -18,6 +19,10 @@ class AstExtractionException implements Exception {
 }
 
 class AstExtractor {
+  AstExtractor({Logger? logger}) : _logger = logger ?? Logger();
+
+  final Logger _logger;
+
   Future<AstModel> extract(ProjectContext context) async {
     if (context.dartFiles.isEmpty) {
       return const AstModel(
@@ -38,6 +43,7 @@ class AstExtractor {
     final calls = <ResolvedCall>[];
     final routeDestinationNames = <String>{};
     final typeUsages = <TypeUsage>[];
+    final skippedUnitPaths = <String>[];
 
     try {
       for (final filePath in context.dartFiles) {
@@ -46,6 +52,8 @@ class AstExtractor {
           filePath,
         );
         if (result is! ResolvedUnitResult) {
+          skippedUnitPaths.add(filePath);
+          _logger.debug('Skipping non-resolved unit: $filePath');
           continue;
         }
 
@@ -61,14 +69,22 @@ class AstExtractor {
       await collection.dispose();
     }
 
+    if (skippedUnitPaths.isNotEmpty) {
+      _logger.warn(
+        'Skipped ${skippedUnitPaths.length} non-resolved unit(s) during AST extraction.',
+      );
+    }
+
     classes.sort((a, b) => a.name.compareTo(b.name));
     methods.sort((a, b) => a.qualifiedName.compareTo(b.qualifiedName));
+    skippedUnitPaths.sort();
     return AstModel(
       classes: classes,
       methods: methods,
       calls: calls,
       routeDestinationNames: routeDestinationNames,
       typeUsages: typeUsages,
+      skippedUnitPaths: skippedUnitPaths,
     );
   }
 }

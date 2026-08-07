@@ -20,12 +20,13 @@ class DependencyGraph {
 
   GraphNode? nodeById(String id) => nodes[id];
 
-  List<GraphEdge> dependenciesOf(String id) =>
-      List.unmodifiable(outgoing[id] ?? const []);
+  static const _emptyEdges = <GraphEdge>[];
 
-  List<GraphEdge> dependentsOf(String id) =>
-      List.unmodifiable(incoming[id] ?? const []);
+  List<GraphEdge> dependenciesOf(String id) => outgoing[id] ?? _emptyEdges;
 
+  List<GraphEdge> dependentsOf(String id) => incoming[id] ?? _emptyEdges;
+
+  /// Returns a single match, or null when missing / ambiguous.
   GraphNode? findMethod({
     required String methodName,
     String? className,
@@ -44,7 +45,7 @@ class DependencyGraph {
       return true;
     }).toList(growable: false);
 
-    if (matches.isEmpty) {
+    if (matches.length != 1) {
       return null;
     }
     return matches.first;

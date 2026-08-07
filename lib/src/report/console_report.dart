@@ -1,4 +1,5 @@
 import '../model/blast_result.dart';
+import 'report_sections.dart';
 
 class ConsoleReport {
   String render(BlastResult result) {
@@ -8,16 +9,12 @@ class ConsoleReport {
       ..writeln('BlastRadius')
       ..writeln();
 
-    if (result.changedFiles.isNotEmpty) {
-      _section(buffer, 'Changed Files', result.changedFiles);
+    for (final section in blastReportSections(result)) {
+      if (section.optional && section.items.isEmpty) {
+        continue;
+      }
+      _section(buffer, section.title, section.items);
     }
-    _section(buffer, 'Changed', result.changed);
-    _sectionIfPresent(buffer, 'Affected Repositories', result.repositories);
-    _sectionIfPresent(buffer, 'Affected Services', result.services);
-    _sectionIfPresent(buffer, 'Affected State Managers', result.stateManagers);
-    _sectionIfPresent(buffer, 'Affected Screens', result.screens);
-    _sectionIfPresent(buffer, 'Affected Widgets', result.widgets);
-    _sectionIfPresent(buffer, 'Suggested Tests', result.suggestedTests);
 
     if (result.isEmpty) {
       buffer
@@ -37,13 +34,6 @@ class ConsoleReport {
       ..writeln('────────────────────────────────────────────');
 
     return buffer.toString();
-  }
-
-  void _sectionIfPresent(StringBuffer buffer, String title, List<String> items) {
-    if (items.isEmpty) {
-      return;
-    }
-    _section(buffer, title, items);
   }
 
   void _section(StringBuffer buffer, String title, List<String> items) {

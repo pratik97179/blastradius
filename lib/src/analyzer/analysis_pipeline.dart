@@ -2,6 +2,7 @@ import '../graph/graph.dart';
 import '../graph/graph_builder.dart';
 import '../model/ast_model.dart';
 import '../model/project_context.dart';
+import '../utils/logger.dart';
 import 'ast_extractor.dart';
 import 'classifiers.dart';
 
@@ -20,8 +21,12 @@ class AnalysisSnapshot {
 }
 
 class AnalysisPipeline {
+  AnalysisPipeline({Logger? logger}) : _logger = logger;
+
+  final Logger? _logger;
+
   Future<AnalysisSnapshot> run(ProjectContext context) async {
-    final ast = await AstExtractor().extract(context);
+    final ast = await AstExtractor(logger: _logger).extract(context);
     final classified = ClassClassifier().classifyAll(
       ast.classes,
       routeDestinationNames: ast.routeDestinationNames,

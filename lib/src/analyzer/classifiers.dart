@@ -2,6 +2,7 @@ import 'package:path/path.dart' as p;
 
 import '../model/ast_model.dart';
 import '../model/node_kind.dart';
+import '../utils/type_names.dart';
 import 'kind_signals.dart';
 
 class ClassifiedClass {
@@ -85,7 +86,7 @@ class ClassClassifier {
 
   bool _matchesAny(Iterable<String> hierarchy, Set<String> bases) {
     for (final entry in hierarchy) {
-      if (bases.contains(_simpleTypeName(entry))) {
+      if (bases.contains(simpleTypeName(entry))) {
         return true;
       }
     }
@@ -104,11 +105,5 @@ class ClassClassifier {
   List<String> _pathSegments(String filePath) {
     final normalized = p.normalize(filePath).replaceAll('\\', '/');
     return normalized.split('/').where((s) => s.isNotEmpty).toList();
-  }
-
-  String _simpleTypeName(String typeSource) {
-    final withoutArgs = typeSource.split('<').first.trim();
-    final dotted = withoutArgs.split('.');
-    return dotted.last.trim();
   }
 }

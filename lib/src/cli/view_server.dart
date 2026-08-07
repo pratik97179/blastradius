@@ -119,7 +119,33 @@ Future<Directory> exportDashboard({
   required String payloadJson,
   required String exportPath,
 }) async {
-  final target = Directory(p.normalize(p.absolute(exportPath)));
+  final trimmed = exportPath.trim();
+  if (trimmed.isEmpty) {
+    throw ArgumentError.value(exportPath, 'exportPath', 'must not be empty');
+  }
+
+  final targetPath = p.normalize(p.absolute(trimmed));
+  if (!p.isAbsolute(trimmed)) {
+    final cwd = p.normalize(Directory.current.absolute.path);
+    if (targetPath != cwd && !p.isWithin(cwd, targetPath)) {
+      throw ArgumentError.value(
+        exportPath,
+        'exportPath',
+        'must not escape the current working directory',
+      );
+    }
+  }
+
+  final distPath = p.normalize(distDir.absolute.path);
+  if (targetPath == distPath || p.isWithin(distPath, targetPath)) {
+    throw ArgumentError.value(
+      exportPath,
+      'exportPath',
+      'must not overwrite the dashboard dist directory',
+    );
+  }
+
+  final target = Directory(targetPath);
   if (target.existsSync()) {
     target.deleteSync(recursive: true);
   }

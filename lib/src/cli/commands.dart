@@ -1,29 +1,23 @@
 import 'dart:io';
 
-import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
 
-import '../analyzer/analysis_pipeline.dart';
 import '../analyzer/ast_extractor.dart';
 import '../analyzer/classifiers.dart';
-import '../analyzer/project_analyzer.dart';
-import '../diff/blast_result_merger.dart';
-import '../diff/diff_symbol_mapper.dart';
-import '../diff/git_diff_parser.dart';
-import '../engine/blast_radius_engine.dart';
 import '../engine/symbol_resolver.dart';
 import '../graph/edge.dart';
 import '../graph/node.dart';
-import '../model/blast_result.dart';
 import '../model/node_kind.dart';
 import '../model/project_context.dart';
 import '../report/report_renderer.dart';
-import '../utils/logger.dart';
+import 'analysis_workflow.dart';
+import 'cli_options.dart';
 import 'exit_codes.dart';
+import 'global_options.dart';
 import 'view_commands.dart';
 
-const String packageVersion = '0.3.1';
+const String packageVersion = '0.3.2';
 
 Future<int> runBlastRadius(List<String> args) async {
   final runner = BlastRadiusCommandRunner();
@@ -55,7 +49,8 @@ class BlastRadiusCommandRunner extends CommandRunner<int> {
     argParser.addOption(
       'project',
       abbr: 'p',
-      help: 'Path to the Dart or Flutter package root (defaults to the current directory).',
+      help:
+          'Path to the Dart or Flutter package root (defaults to the current directory).',
       valueHelp: 'path',
     );
     argParser.addFlag(
@@ -87,65 +82,28 @@ class BlastRadiusCommandRunner extends CommandRunner<int> {
 
     return await runCommand(argResults) ?? ExitCodes.success;
   }
-
-  Logger loggerFrom(ArgResults global) {
-    return Logger(verbose: global['verbose'] == true);
-  }
-
-  String projectFrom(ArgResults global) {
-    final raw = global['project'] as String?;
-    if (raw == null || raw.isEmpty) {
-      return p.current;
-    }
-    return p.normalize(p.absolute(raw));
-  }
 }
 
-mixin GlobalOptions on Command<int> {
-  BlastRadiusCommandRunner get blastRunner =>
-      runner! as BlastRadiusCommandRunner;
-
-  Logger get logger => blastRunner.loggerFrom(globalResults!);
-
-  String get projectPath => blastRunner.projectFrom(globalResults!);
-
-  ProjectContext? discoverProject() {
-    try {
-      final context = ProjectAnalyzer().discover(projectPath);
-      logger.debug(
-        'discovered ${context.packageName} (${context.dartFileCount} dart files)',
-      );
-      return context;
-    } on ProjectDiscoveryException catch (e) {
-      logger.error(e.message);
-      return null;
-    }
-  }
-
-  Future<int> runTrace({
+mixin TraceReportOptions on GlobalOptions {
+  Future<int> runTraceReport({
     required ProjectContext context,
     required List<GraphNode> Function(AnalysisSnapshot snapshot) resolveSeeds,
     required String format,
   }) async {
     try {
-      final snapshot = await AnalysisPipeline().run(context);
-      final seeds = resolveSeeds(snapshot);
-      final trace = BlastRadiusEngine().trace(
-        graph: snapshot.graph,
-        seeds: seeds,
-        candidateTestFiles: context.dartFiles
-            .where((f) => f.endsWith('_test.dart'))
-            .toList(growable: false),
+      final trace = await AnalysisWorkflow(logger: logger).runTrace(
+        context: context,
+        resolveSeeds: resolveSeeds,
       );
-
       logger.info(ReportRenderer().render(trace.result, format));
       return ExitCodes.success;
-    } on AstExtractionException catch (e) {
-      logger.error(e.message);
-      return ExitCodes.projectError;
-    } on SymbolResolutionException catch (e) {
-      logger.error(e.message);
-      return ExitCodes.usageError;
+    } on Object catch (e) {
+      final code = exitCodeForAnalysisError(e);
+      if (code != null) {
+        logger.error(e.toString());
+        return code;
+      }
+      rethrow;
     }
   }
 }
@@ -171,7 +129,8 @@ class TraceCommand extends Command<int> with GlobalOptions {
   }
 }
 
-class TraceMethodCommand extends Command<int> with GlobalOptions {
+class TraceMethodCommand extends Command<int>
+    with GlobalOptions, TraceReportOptions {
   TraceMethodCommand() {
     argParser.addOption(
       'file',
@@ -179,12 +138,7 @@ class TraceMethodCommand extends Command<int> with GlobalOptions {
       help: 'Disambiguate the method by source file path.',
       valueHelp: 'path',
     );
-    argParser.addOption(
-      'format',
-      allowed: ['console', 'json', 'md'],
-      defaultsTo: 'console',
-      help: 'Report format.',
-    );
+    addReportFormatOption(argParser);
   }
 
   @override
@@ -210,7 +164,7 @@ class TraceMethodCommand extends Command<int> with GlobalOptions {
     final file = argResults!['file'] as String?;
     final format = argResults!['format'] as String;
 
-    return runTrace(
+    return runTraceReport(
       context: context,
       format: format,
       resolveSeeds: (snapshot) => SymbolResolver().resolveMethod(
@@ -223,14 +177,10 @@ class TraceMethodCommand extends Command<int> with GlobalOptions {
   }
 }
 
-class TraceFileCommand extends Command<int> with GlobalOptions {
+class TraceFileCommand extends Command<int>
+    with GlobalOptions, TraceReportOptions {
   TraceFileCommand() {
-    argParser.addOption(
-      'format',
-      allowed: ['console', 'json', 'md'],
-      defaultsTo: 'console',
-      help: 'Report format.',
-    );
+    addReportFormatOption(argParser);
   }
 
   @override
@@ -255,7 +205,7 @@ class TraceFileCommand extends Command<int> with GlobalOptions {
     final filePath = argResults!.rest.first;
     final format = argResults!['format'] as String;
 
-    return runTrace(
+    return runTraceReport(
       context: context,
       format: format,
       resolveSeeds: (snapshot) => SymbolResolver().resolveFile(
@@ -267,7 +217,8 @@ class TraceFileCommand extends Command<int> with GlobalOptions {
   }
 }
 
-class TraceClassCommand extends Command<int> with GlobalOptions {
+class TraceClassCommand extends Command<int>
+    with GlobalOptions, TraceReportOptions {
   TraceClassCommand() {
     argParser.addOption(
       'file',
@@ -275,12 +226,7 @@ class TraceClassCommand extends Command<int> with GlobalOptions {
       help: 'Disambiguate the class by source file path.',
       valueHelp: 'path',
     );
-    argParser.addOption(
-      'format',
-      allowed: ['console', 'json', 'md'],
-      defaultsTo: 'console',
-      help: 'Report format.',
-    );
+    addReportFormatOption(argParser);
   }
 
   @override
@@ -306,7 +252,7 @@ class TraceClassCommand extends Command<int> with GlobalOptions {
     final file = argResults!['file'] as String?;
     final format = argResults!['format'] as String;
 
-    return runTrace(
+    return runTraceReport(
       context: context,
       format: format,
       resolveSeeds: (snapshot) => SymbolResolver().resolveClass(
@@ -327,12 +273,7 @@ class DiffCommand extends Command<int> with GlobalOptions {
       help: 'Git revision to diff against (working tree vs base).',
       valueHelp: 'ref',
     );
-    argParser.addOption(
-      'format',
-      allowed: ['console', 'json', 'md'],
-      defaultsTo: 'console',
-      help: 'Report format.',
-    );
+    addReportFormatOption(argParser);
   }
 
   @override
@@ -353,57 +294,19 @@ class DiffCommand extends Command<int> with GlobalOptions {
     final format = argResults!['format'] as String;
 
     try {
-      final hunks = await GitDiffParser().collectHunks(
-        projectRoot: context.rootPath,
+      final result = await AnalysisWorkflow(logger: logger).runDiff(
+        context: context,
         base: base,
       );
-      final snapshot = await AnalysisPipeline().run(context);
-      final seeds = DiffSymbolMapper().mapToSeeds(
-        ast: snapshot.ast,
-        graph: snapshot.graph,
-        hunks: hunks,
-        projectRoot: context.rootPath,
-      );
-
-      final changedFiles = hunks.map((h) => h.relativePath).toSet().toList()
-        ..sort();
-
-      final BlastResult result;
-      if (seeds.isEmpty) {
-        result = BlastResultMerger().merge(
-          const [],
-          changedFiles: changedFiles,
-        );
-      } else {
-        final single = BlastRadiusEngine().trace(
-          graph: snapshot.graph,
-          seeds: seeds,
-          candidateTestFiles: context.dartFiles
-              .where((f) => f.endsWith('_test.dart'))
-              .toList(growable: false),
-        ).result;
-        result = BlastResult(
-          changed: single.changed,
-          changedFiles: changedFiles,
-          repositories: single.repositories,
-          stateManagers: single.stateManagers,
-          screens: single.screens,
-          widgets: single.widgets,
-          services: single.services,
-          suggestedTests: single.suggestedTests,
-          risk: single.risk,
-          confidence: single.confidence,
-        );
-      }
-
-      logger.info(ReportRenderer().render(result, format));
+      logger.info(ReportRenderer().render(result.trace.result, format));
       return ExitCodes.success;
-    } on GitDiffException catch (e) {
-      logger.error(e.message);
-      return ExitCodes.projectError;
-    } on AstExtractionException catch (e) {
-      logger.error(e.message);
-      return ExitCodes.projectError;
+    } on Object catch (e) {
+      final code = exitCodeForAnalysisError(e);
+      if (code != null) {
+        logger.error(e.toString());
+        return code;
+      }
+      rethrow;
     }
   }
 }
@@ -436,7 +339,8 @@ class AnalyzeCommand extends Command<int> with GlobalOptions {
     }
 
     try {
-      final snapshot = await AnalysisPipeline().run(context);
+      final snapshot =
+          await AnalysisWorkflow(logger: logger).runPipeline(context);
       final kindCounts = ClassClassifier().countByKind(snapshot.classified);
       final graph = snapshot.graph;
       final ast = snapshot.ast;
@@ -447,6 +351,12 @@ class AnalyzeCommand extends Command<int> with GlobalOptions {
         'Calls     ${ast.calls.length} (${ast.resolvedCallCount} resolved)',
       );
       logger.info('Graph     ${graph.nodeCount} nodes, ${graph.edgeCount} edges');
+      if (ast.unresolvedUnitCount > 0) {
+        logger.info(
+          'Unresolved units ${ast.unresolvedUnitCount} '
+          '(${ast.skippedUnitPaths.length} skipped)',
+        );
+      }
       logger.info('Kinds');
       for (final kind in NodeKind.values) {
         final count = kindCounts[kind];

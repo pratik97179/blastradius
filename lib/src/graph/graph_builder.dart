@@ -1,6 +1,7 @@
 import '../analyzer/classifiers.dart';
 import '../model/ast_model.dart';
 import '../model/node_kind.dart';
+import '../utils/type_names.dart';
 import 'edge.dart';
 import 'graph.dart';
 import 'node.dart';
@@ -14,8 +15,9 @@ class GraphBuilder {
     final edges = <GraphEdge>[];
     final seenEdges = <String>{};
 
-    final kindByClassName = <String, NodeKind>{
-      for (final item in classified) item.name: item.kind,
+    final kindByClassId = <String, NodeKind>{
+      for (final item in classified)
+        _classId(item.declaration.filePath, item.name): item.kind,
     };
 
     for (final declaration in ast.classes) {
@@ -23,20 +25,32 @@ class GraphBuilder {
       nodes[id] = GraphNode(
         id: id,
         name: declaration.name,
-        kind: kindByClassName[declaration.name] ?? NodeKind.other,
+        kind: kindByClassId[id] ?? NodeKind.other,
         filePath: declaration.filePath,
         isMethod: false,
       );
+    }
 
-      for (final typeName in declaration.hierarchyTypeNames) {
-        final simple = _simpleTypeName(typeName);
-        final target = _findClassNodeId(nodes, ast, simple);
-        if (target == null || target == id) {
-          continue;
+    final classIdsByName = <String, List<String>>{};
+    final methodIdsByClassAndName = <String, List<String>>{};
+    for (final node in nodes.values) {
+      if (!node.isMethod) {
+        classIdsByName.putIfAbsent(node.name, () => []).add(node.id);
+      }
+    }
+
+    for (final declaration in ast.classes) {
+      final id = _classId(declaration.filePath, declaration.name);
+
+      void addHierarchy(String? typeName, EdgeKind kind) {
+        if (typeName == null) {
+          return;
         }
-        final kind = declaration.superclassName == typeName
-            ? EdgeKind.extendsType
-            : EdgeKind.implementsType;
+        final simple = simpleTypeName(typeName);
+        final target = _uniqueId(classIdsByName[simple]);
+        if (target == null || target == id) {
+          return;
+        }
         _addEdge(
           edges: edges,
           seen: seenEdges,
@@ -48,24 +62,37 @@ class GraphBuilder {
           ),
         );
       }
+
+      addHierarchy(declaration.superclassName, EdgeKind.extendsType);
+      for (final mixinName in declaration.mixinNames) {
+        addHierarchy(mixinName, EdgeKind.mixinType);
+      }
+      for (final interfaceName in declaration.interfaceNames) {
+        addHierarchy(interfaceName, EdgeKind.implementsType);
+      }
     }
 
     for (final method in ast.methods) {
       final id = _methodId(method.filePath, method.className, method.name);
+      final classId = method.className == null
+          ? null
+          : _classId(method.filePath, method.className!);
       nodes[id] = GraphNode(
         id: id,
         name: method.name,
-        kind: method.className == null
+        kind: classId == null
             ? NodeKind.other
-            : (kindByClassName[method.className!] ?? NodeKind.other),
+            : (kindByClassId[classId] ?? NodeKind.other),
         filePath: method.filePath,
         isMethod: true,
         className: method.className,
       );
 
       if (method.className != null) {
-        final classId = _classId(method.filePath, method.className!);
-        if (nodes.containsKey(classId)) {
+        methodIdsByClassAndName
+            .putIfAbsent('${method.className}\u0000${method.name}', () => [])
+            .add(id);
+        if (classId != null && nodes.containsKey(classId)) {
           _addEdge(
             edges: edges,
             seen: seenEdges,
@@ -80,6 +107,14 @@ class GraphBuilder {
       }
     }
 
+    // Rebuild class index after methods are added (methods do not affect it).
+    classIdsByName.clear();
+    for (final node in nodes.values) {
+      if (!node.isMethod) {
+        classIdsByName.putIfAbsent(node.name, () => []).add(node.id);
+      }
+    }
+
     for (final call in ast.calls) {
       if (!call.isResolved || call.fromMethod == null) {
         continue;
@@ -90,7 +125,12 @@ class GraphBuilder {
         continue;
       }
 
-      final toId = _resolveCallTargetId(nodes, call);
+      final toId = _resolveCallTargetId(
+        nodes: nodes,
+        call: call,
+        classIdsByName: classIdsByName,
+        methodIdsByClassAndName: methodIdsByClassAndName,
+      );
       if (toId == null || toId == fromId) {
         continue;
       }
@@ -112,7 +152,7 @@ class GraphBuilder {
         final fromClassId = _classId(call.fromFile, fromClass);
         final toClassId = call.targetFile != null
             ? _classId(call.targetFile!, toClass)
-            : _findClassNodeId(nodes, ast, toClass);
+            : _uniqueId(classIdsByName[toClass]);
         if (toClassId != null &&
             nodes.containsKey(fromClassId) &&
             nodes.containsKey(toClassId) &&
@@ -132,7 +172,7 @@ class GraphBuilder {
     }
 
     for (final usage in ast.typeUsages) {
-      final toClassId = _findClassNodeId(nodes, ast, usage.targetTypeName);
+      final toClassId = _uniqueId(classIdsByName[usage.targetTypeName]);
       if (toClassId == null) {
         continue;
       }
@@ -177,10 +217,12 @@ class GraphBuilder {
     return DependencyGraph(nodes: nodes, edges: edges);
   }
 
-  String? _resolveCallTargetId(
-    Map<String, GraphNode> nodes,
-    ResolvedCall call,
-  ) {
+  String? _resolveCallTargetId({
+    required Map<String, GraphNode> nodes,
+    required ResolvedCall call,
+    required Map<String, List<String>> classIdsByName,
+    required Map<String, List<String>> methodIdsByClassAndName,
+  }) {
     if (call.targetFile != null && call.targetClass != null) {
       final methodId = _methodId(
         call.targetFile!,
@@ -197,40 +239,22 @@ class GraphBuilder {
     }
 
     if (call.targetClass != null) {
-      final matches = nodes.values.where((node) {
-        return node.isMethod &&
-            node.className == call.targetClass &&
-            node.name == call.targetName;
-      }).toList(growable: false);
-      if (matches.length == 1) {
-        return matches.first.id;
+      final methodKey = '${call.targetClass}\u0000${call.targetName}';
+      final methodId = _uniqueId(methodIdsByClassAndName[methodKey]);
+      if (methodId != null) {
+        return methodId;
       }
-
-      final classMatches = nodes.values
-          .where(
-            (node) => !node.isMethod && node.name == call.targetClass,
-          )
-          .toList(growable: false);
-      if (classMatches.length == 1) {
-        return classMatches.first.id;
-      }
+      return _uniqueId(classIdsByName[call.targetClass!]);
     }
 
     return null;
   }
 
-  String? _findClassNodeId(
-    Map<String, GraphNode> nodes,
-    AstModel ast,
-    String className,
-  ) {
-    final matches = nodes.values
-        .where((node) => !node.isMethod && node.name == className)
-        .toList(growable: false);
-    if (matches.length == 1) {
-      return matches.first.id;
+  String? _uniqueId(List<String>? ids) {
+    if (ids == null || ids.length != 1) {
+      return null;
     }
-    return null;
+    return ids.first;
   }
 
   void _addEdge({
@@ -252,10 +276,5 @@ class GraphBuilder {
       return '$filePath#$methodName';
     }
     return '$filePath#$className.$methodName';
-  }
-
-  String _simpleTypeName(String typeSource) {
-    final withoutArgs = typeSource.split('<').first.trim();
-    return withoutArgs.split('.').last.trim();
   }
 }

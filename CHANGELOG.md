@@ -2,6 +2,27 @@
 
 All notable changes to BlastRadius are documented in this file.
 
+## [0.3.2]
+
+### Changed
+
+- Empty blast results use advisory confidence `0.4` across engine, merger, and
+  reports (aligned with `ConfidenceEngine.overall` on empty scores).
+- CLI orchestration for `trace` / `diff` / `view` shares one analysis workflow.
+- Graph builder keys class kinds by file identity, indexes call targets, and
+  tags mixin hierarchy edges as `mixinType`.
+- Diff symbol mapping indexes AST by path and no longer seeds whole files for
+  import/comment-only hunks.
+- Compact visual payloads skip building a full throwaway graph first.
+- Report JSON/summary share `BlastResult.toJsonMap()`; console and markdown
+  share ordered section definitions.
+
+### Fixed
+
+- Duplicate class names across files no longer overwrite each other's kinds.
+- View server SIGINT subscription is cancelled after the session stops.
+- Dashboard export rejects empty paths and cwd-escaping relative paths.
+
 ## [0.3.1]
 
 ### Added

@@ -93,6 +93,7 @@ class AstModel {
     required this.calls,
     this.routeDestinationNames = const {},
     this.typeUsages = const [],
+    this.skippedUnitPaths = const [],
   });
 
   final List<DeclaredClass> classes;
@@ -105,5 +106,10 @@ class AstModel {
   /// Type arguments from BlocBuilder / Provider / context.read-style usages.
   final List<TypeUsage> typeUsages;
 
+  /// Absolute paths that did not yield a resolved unit during extraction.
+  final List<String> skippedUnitPaths;
+
   int get resolvedCallCount => calls.where((c) => c.isResolved).length;
+
+  int get unresolvedUnitCount => skippedUnitPaths.length;
 }

@@ -1,3 +1,5 @@
+import '../model/node_kind.dart';
+
 /// Pre-defined structural signals used for [NodeKind] classification.
 ///
 /// Classification prefers framework types, router destinations, and known
@@ -13,6 +15,14 @@ class KindSignals {
     'StatelessWidget',
     'StatefulWidget',
     'Widget',
+  };
+
+  /// Node kinds treated as state managers in blast summaries.
+  static const Set<NodeKind> stateManagerKinds = {
+    NodeKind.bloc,
+    NodeKind.cubit,
+    NodeKind.changeNotifier,
+    NodeKind.provider,
   };
 
   /// Constructors whose builder / pageBuilder / child args define screens.

@@ -42,32 +42,8 @@ class VisualPayload {
       );
     }
 
-    var nodes = <Map<String, Object?>>[];
-    for (final id in nodeIds) {
-      final node = graph.nodeById(id);
-      if (node == null) {
-        continue;
-      }
-      final role = trace.seedIds.contains(id)
-          ? VisualNodeRole.seed
-          : VisualNodeRole.affected;
-      nodes.add(
-        _nodeJson(
-          node: node,
-          projectRoot: context.rootPath,
-          role: role,
-          score: trace.scoresByNodeId[id],
-        ),
-      );
-    }
-
-    var edges = <Map<String, Object?>>[];
-    for (final edge in graph.edges) {
-      if (!nodeIds.contains(edge.fromId) || !nodeIds.contains(edge.toId)) {
-        continue;
-      }
-      edges.add(_edgeJson(edge));
-    }
+    final List<Map<String, Object?>> nodes;
+    final List<Map<String, Object?>> edges;
 
     if (compact) {
       final compacted = _compactGraph(
@@ -79,6 +55,33 @@ class VisualPayload {
       );
       nodes = compacted.nodes;
       edges = compacted.edges;
+    } else {
+      nodes = <Map<String, Object?>>[];
+      for (final id in nodeIds) {
+        final node = graph.nodeById(id);
+        if (node == null) {
+          continue;
+        }
+        final role = trace.seedIds.contains(id)
+            ? VisualNodeRole.seed
+            : VisualNodeRole.affected;
+        nodes.add(
+          _nodeJson(
+            node: node,
+            projectRoot: context.rootPath,
+            role: role,
+            score: trace.scoresByNodeId[id],
+          ),
+        );
+      }
+
+      edges = <Map<String, Object?>>[];
+      for (final edge in graph.edges) {
+        if (!nodeIds.contains(edge.fromId) || !nodeIds.contains(edge.toId)) {
+          continue;
+        }
+        edges.add(_edgeJson(edge));
+      }
     }
 
     nodes.sort((a, b) => (a['id'] as String).compareTo(b['id'] as String));
@@ -108,18 +111,8 @@ class VisualPayload {
     DateTime? generatedAt,
     bool compact = true,
   }) {
-    var nodes = graph.nodes.values
-        .map(
-          (node) => _nodeJson(
-            node: node,
-            projectRoot: context.rootPath,
-            role: VisualNodeRole.context,
-            score: null,
-          ),
-        )
-        .toList();
-
-    var edges = graph.edges.map(_edgeJson).toList();
+    final List<Map<String, Object?>> nodes;
+    final List<Map<String, Object?>> edges;
 
     if (compact) {
       final compacted = _compactGraph(
@@ -132,6 +125,18 @@ class VisualPayload {
       );
       nodes = compacted.nodes;
       edges = compacted.edges;
+    } else {
+      nodes = graph.nodes.values
+          .map(
+            (node) => _nodeJson(
+              node: node,
+              projectRoot: context.rootPath,
+              role: VisualNodeRole.context,
+              score: null,
+            ),
+          )
+          .toList();
+      edges = graph.edges.map(_edgeJson).toList();
     }
 
     nodes.sort((a, b) => (a['id'] as String).compareTo(b['id'] as String));
@@ -147,17 +152,7 @@ class VisualPayload {
       context: context,
       command: command,
       generatedAt: generatedAt,
-      summary: const BlastResult(
-        changed: [],
-        repositories: [],
-        stateManagers: [],
-        screens: [],
-        widgets: [],
-        services: [],
-        suggestedTests: [],
-        risk: RiskLevel.low,
-        confidence: 0.0,
-      ),
+      summary: BlastResult.empty,
       nodes: nodes,
       edges: edges,
       compact: compact,
@@ -183,7 +178,7 @@ class VisualPayload {
         'generatedAt': at.toIso8601String(),
         'compact': compact,
       },
-      'summary': _summaryJson(summary),
+      'summary': summary.toJsonMap(),
       'graph': <String, Object?>{
         'nodes': nodes,
         'edges': edges,
@@ -193,7 +188,7 @@ class VisualPayload {
 
   String toJson() => const JsonEncoder.withIndent('  ').convert(data);
 
-  /// Collapse non-seed methods into class nodes and drop extends/implements.
+  /// Collapse non-seed methods into class nodes and drop hierarchy edges.
   static ({
     List<Map<String, Object?>> nodes,
     List<Map<String, Object?>> edges,
@@ -205,10 +200,10 @@ class VisualPayload {
     required Set<String> candidateNodeIds,
     VisualNodeRole defaultRole = VisualNodeRole.affected,
   }) {
-    final classByName = <String, GraphNode>{};
+    final classByKey = <String, GraphNode>{};
     for (final node in graph.nodes.values) {
       if (!node.isMethod) {
-        classByName[node.name] = node;
+        classByKey[_classKey(node.filePath, node.name)] = node;
       }
     }
 
@@ -216,7 +211,23 @@ class VisualPayload {
       if (!node.isMethod || node.className == null) {
         return null;
       }
-      return classByName[node.className!];
+      return classByKey[_classKey(node.filePath, node.className!)];
+    }
+
+    final classScores = <String, double>{};
+    for (final entry in scoresByNodeId.entries) {
+      final method = graph.nodeById(entry.key);
+      if (method == null || !method.isMethod || method.className == null) {
+        continue;
+      }
+      final cls = classFor(method);
+      if (cls == null) {
+        continue;
+      }
+      final existing = classScores[cls.id];
+      if (existing == null || entry.value > existing) {
+        classScores[cls.id] = entry.value;
+      }
     }
 
     final keep = <String, GraphNode>{};
@@ -231,10 +242,7 @@ class VisualPayload {
       }
       if (node.isMethod) {
         final cls = classFor(node);
-        if (cls != null && candidateNodeIds.contains(cls.id)) {
-          keep[cls.id] = cls;
-        } else if (cls != null) {
-          // Class may sit outside walk scores but still anchors the method.
+        if (cls != null) {
           keep[cls.id] = cls;
         }
         continue;
@@ -246,7 +254,7 @@ class VisualPayload {
       if (!node.isMethod || node.className == null) {
         continue;
       }
-      final cls = classByName[node.className!];
+      final cls = classFor(node);
       if (cls != null) {
         keep.putIfAbsent(cls.id, () => cls);
       }
@@ -282,26 +290,7 @@ class VisualPayload {
       if (direct != null) {
         return direct;
       }
-      // Class score = best score among collapsed methods in the walk.
-      final node = keep[id];
-      if (node == null || node.isMethod) {
-        return null;
-      }
-      var best = 0.0;
-      var found = false;
-      for (final entry in scoresByNodeId.entries) {
-        final method = graph.nodeById(entry.key);
-        if (method == null || !method.isMethod) {
-          continue;
-        }
-        if (method.className == node.name) {
-          found = true;
-          if (entry.value > best) {
-            best = entry.value;
-          }
-        }
-      }
-      return found ? best : null;
+      return classScores[id];
     }
 
     final nodes = keep.values
@@ -319,7 +308,8 @@ class VisualPayload {
     final edges = <Map<String, Object?>>[];
     for (final edge in graph.edges) {
       if (edge.kind == EdgeKind.extendsType ||
-          edge.kind == EdgeKind.implementsType) {
+          edge.kind == EdgeKind.implementsType ||
+          edge.kind == EdgeKind.mixinType) {
         continue;
       }
       final from = resolve(edge.fromId);
@@ -342,24 +332,8 @@ class VisualPayload {
     return (nodes: nodes, edges: edges);
   }
 
-  static Map<String, Object?> _summaryJson(BlastResult result) {
-    return {
-      'changed': result.changed,
-      'changedFiles': result.changedFiles,
-      'affected': <String, Object?>{
-        'repositories': result.repositories,
-        'services': result.services,
-        'stateManagers': result.stateManagers,
-        'screens': result.screens,
-        'widgets': result.widgets,
-      },
-      'suggestedTests': result.suggestedTests,
-      'risk': result.risk.label,
-      'confidence': double.parse(result.confidence.toStringAsFixed(4)),
-      'confidencePercent': (result.confidence * 100).round(),
-      'empty': result.isEmpty,
-    };
-  }
+  static String _classKey(String filePath, String className) =>
+      '$filePath#$className';
 
   static Map<String, Object?> _nodeJson({
     required GraphNode node,
